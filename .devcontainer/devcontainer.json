@@ -1,0 +1,39 @@
+{
+  "name": "Isaac AI Agent Development",
+  "image": "python:3.11-slim",
+  "forwardPorts": [8000],
+  "remoteEnv": {
+    "PYTHONUNBUFFERED": "1",
+    "PYTHONPATH": "/workspace/src"
+  },
+  "remoteUser": "root",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "ms-python.debugpy",
+        "ms-python.black-formatter",
+        "sumneko.lua",
+        "trixnz.vscode-lua",
+        "eamodio.gitlens",
+        "ms-vscode.makefile-tools"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/workspace/.venv/bin/python",
+        "python.linting.enabled": true,
+        "python.linting.pylintEnabled": true,
+        "[lua]": {
+          "editor.formatOnSave": true
+        },
+        "Lua.diagnostics.globals": ["love"],
+        "editor.formatOnSave": true,
+        "python.formatting.provider": "black"
+      }
+    }
+  },
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+  "mounts": [
+    "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
+  ]
+}

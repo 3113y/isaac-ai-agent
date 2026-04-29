@@ -1,0 +1,236 @@
+{
+  "class_enhancement": {
+    "summary": "代表房间中的网格实体，如岩石、尖刺、陷阱、门等。提供查询类型、变体、索引，控制销毁、伤害、初始化、渲染及向子类转换的方法。",
+    "use_cases": [
+      "管理房间内的静态与动态障碍物",
+      "动态改变网格实体的类型与属性",
+      "响应玩家交互并处理破坏逻辑"
+    ],
+    "key_methods": [
+      "Destroy",
+      "GetType",
+      "GetSaveState",
+      "Init",
+      "ToRock"
+    ]
+  },
+  "method_enhancements": [
+    {
+      "method_id": "m001",
+      "summary": "立即或延迟摧毁该网格实体，返回是否成功。",
+      "use_cases": [
+        "清除房间中的石块等障碍",
+        "移除自定义放置的网格物体"
+      ],
+      "key_methods": [
+        "Destroy",
+        "DestroyWithSource",
+        "Hurt"
+      ]
+    },
+    {
+      "method_id": "m002",
+      "summary": "带来源地摧毁网格实体，可用于追踪伤害来源并决定后续逻辑。",
+      "use_cases": [
+        "记录伤害来源以便统计击杀",
+        "实现被特定道具破坏的效果"
+      ],
+      "key_methods": [
+        "DestroyWithSource",
+        "Destroy",
+        "HurtWithSource"
+      ]
+    },
+    {
+      "method_id": "m003",
+      "summary": "返回该网格实体在房间网格中的索引。",
+      "use_cases": [
+        "通过索引获取对应位置",
+        "与其他依赖网格索引的API组合使用"
+      ],
+      "key_methods": [
+        "GetGridIndex",
+        "Position"
+      ]
+    },
+    {
+      "method_id": "m004",
+      "summary": "获取该网格实体的RNG实例，但建议使用GridEntityDesc中的种子字段以获得更可靠的随机性。",
+      "use_cases": [
+        "需要网格实体相关的随机数时作为备选"
+      ],
+      "key_methods": [
+        "GetRNG",
+        "GetSaveState"
+      ]
+    },
+    {
+      "method_id": "m005",
+      "summary": "返回该网格实体的保存状态描述对象，推荐代替Desc属性使用。",
+      "use_cases": [
+        "获取持久化数据以便存档或读取",
+        "读取实体生成种子等信息"
+      ],
+      "key_methods": [
+        "GetSaveState",
+        "Desc"
+      ]
+    },
+    {
+      "method_id": "m006",
+      "summary": "获取该网格实体的Sprite对象，用于自定义动画或视觉表现。",
+      "use_cases": [
+        "改变实体的动画文件",
+        "调整渲染层级和特效"
+      ],
+      "key_methods": [
+        "GetSprite",
+        "Render"
+      ]
+    },
+    {
+      "method_id": "m007",
+      "summary": "返回该网格实体的GridEntityType枚举值。",
+      "use_cases": [
+        "判断是否为门、石头等特定类型",
+        "在修改前保存原有类型"
+      ],
+      "key_methods": [
+        "GetType",
+        "SetType"
+      ]
+    },
+    {
+      "method_id": "m008",
+      "summary": "返回该网格实体的变体索引，表示同一类型下的不同表现。",
+      "use_cases": [
+        "检查陷阱门是否为虚空传送门",
+        "区分同一类型的不同功能"
+      ],
+      "key_methods": [
+        "GetVariant",
+        "SetVariant"
+      ]
+    },
+    {
+      "method_id": "m009",
+      "summary": "对该网格实体造成指定伤害，返回是否成功。",
+      "use_cases": [
+        "模拟炸弹伤害破坏岩石",
+        "通过伤害清除非标准障碍"
+      ],
+      "key_methods": [
+        "Hurt",
+        "HurtWithSource"
+      ]
+    },
+    {
+      "method_id": "m010",
+      "summary": "带来源地对网格实体造成伤害，可用于触发特定来源的破坏逻辑。",
+      "use_cases": [
+        "指定玩家或实体造成的伤害",
+        "在伤害的同时记录来源供回调使用"
+      ],
+      "key_methods": [
+        "HurtWithSource",
+        "Hurt",
+        "DestroyWithSource"
+      ]
+    },
+    {
+      "method_id": "m011",
+      "summary": "使用种子初始化网格实体，通常在生成时调用。",
+      "use_cases": [
+        "自定义生成实体时确定随机状态",
+        "重置实体到指定初始状态"
+      ],
+      "key_methods": [
+        "Init",
+        "PostInit"
+      ]
+    },
+    {
+      "method_id": "m012",
+      "summary": "在Init之后调用，完成额外的后初始化处理。",
+      "use_cases": [
+        "确保实体在加载后完整就绪",
+        "在自定义生成流程中衔接初始化"
+      ],
+      "key_methods": [
+        "PostInit",
+        "Init"
+      ]
+    },
+    {
+      "method_id": "m013",
+      "summary": "渲染该网格实体，可传入偏移向量调整绘制位置。",
+      "use_cases": [
+        "手动绘制实体到自定义帧",
+        "配合自定义镜头偏移"
+      ],
+      "key_methods": [
+        "Render",
+        "GetSprite"
+      ]
+    },
+    {
+      "method_id": "m014",
+      "summary": "将该网格实体的类型更改为指定的GridEntityType。",
+      "use_cases": [
+        "动态替换障碍物类型",
+        "实现变形效果"
+      ],
+      "key_methods": [
+        "SetType",
+        "GetType"
+      ]
+    },
+    {
+      "method_id": "m015",
+      "summary": "设置网格实体的变体索引，改变同一类型下的具体表现。",
+      "use_cases": [
+        "将普通陷阱门改为虚空传送门",
+        "切换同一实体的不同状态"
+      ],
+      "key_methods": [
+        "SetVariant",
+        "GetVariant"
+      ]
+    },
+    {
+      "method_id": "m016",
+      "summary": "尝试将该网格实体转换为GridEntityDoor子类，失败返回nil。",
+      "use_cases": [
+        "获取门的特定接口如开关状态",
+        "检查并操作门类网格实体"
+      ],
+      "key_methods": [
+        "ToDoor",
+        "GetType"
+      ]
+    },
+    {
+      "method_id": "m017",
+      "summary": "尝试将实体转换为GridEntityPit子类。",
+      "use_cases": [
+        "操作坑的生成和消失",
+        "控制伤害触发"
+      ],
+      "key_methods": [
+        "ToPit"
+      ]
+    },
+    {
+      "method_id": "m018",
+      "summary": "尝试将实体转换为GridEntityPoop子类。",
+      "use_cases": [
+        "控制便便的破坏或再生",
+        "读取便便相关的额外属性"
+      ],
+      "key_methods": [
+        "ToPoop"
+      ]
+    },
+    {
+      "method_id": "m019",
+      "summary": "尝试

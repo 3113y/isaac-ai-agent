@@ -1,0 +1,22 @@
+version: '3.12'
+
+services:
+  isaac-processor:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: isaac-api-processor:latest
+    container_name: isaac-api-processor
+    working_dir: /app
+    volumes:
+      - ./docs:/app/docs:ro
+      - ./processed_docs:/app/processed_docs
+    environment:
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      ANTHROPIC_BASE_URL: ${ANTHROPIC_BASE_URL:-https://api.deepseek.com/anthropic}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      PYTHONUNBUFFERED: 1
+    stdin_open: true
+    tty: true
+

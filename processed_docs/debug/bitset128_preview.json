@@ -1,0 +1,95 @@
+{
+  "title": "BitSet128",
+  "methods_count": 15,
+  "class_enhancement": {
+    "summary": "BitSet128 提供 128 位存储，用于管理超出 64 位整数范围的标志集合。它通过将 128 位拆分为低 64 位和高 64 位两部分实现，支持位运算、比较操作和逐位读取/设置。",
+    "use_cases": [
+      "存储和操作大量独立标志（如 TearFlags）。",
+      "在需要超过 64 个标志的枚举或状态系统中使用。",
+      "通过位运算高效组合或检测多个状态。"
+    ],
+    "key_methods": [
+      "Get",
+      "Set",
+      "__bor",
+      "__band",
+      "h"
+    ]
+  },
+  "method_enhancement_samples": {
+    "BitSet128": {
+      "summary": "构造函数。创建一个新的 BitSet128 对象，可选地初始化低 64 位（Low）和高 64 位（High），默认均为 0。",
+      "use_cases": [
+        "创建空的位集。",
+        "使用已知的整数值初始化位集。"
+      ],
+      "key_methods": [
+        "BitSet128"
+      ]
+    },
+    "__bnot": {
+      "summary": "一元运算符重载，对应位补（bitwise NOT, ~）。对当前 BitSet128 的所有位取反。",
+      "use_cases": [
+        "反转所有标志位。"
+      ],
+      "key_methods": [
+        "__bnot"
+      ]
+    },
+    "__bor": {
+      "summary": "运算符重载，对应位或（|）。将两个 BitSet128 对象的对应位进行逻辑或运算。",
+      "use_cases": [
+        "合并两个标志集合。"
+      ],
+      "key_methods": [
+        "__bor"
+      ]
+    },
+    "__band": {
+      "summary": "运算符重载，对应位与（&）。将两个 BitSet128 对象的对应位进行逻辑与运算。",
+      "use_cases": [
+        "提取共同标志位。"
+      ],
+      "key_methods": [
+        "__band"
+      ]
+    },
+    "__bxor": {
+      "summary": "运算符重载，对应位异或（^）。将两个 BitSet128 对象的对应位进行异或运算。",
+      "use_cases": [
+        "切换特定标志位。"
+      ],
+      "key_methods": [
+        "__bxor"
+      ]
+    },
+    "__shl": {
+      "summary": "运算符重载，对应左移位（<<）。将 BitSet128 的位整体左移指定的位数。",
+      "use_cases": [
+        "实现快捷的位位置调整。"
+      ],
+      "key_methods": [
+        "__shl"
+      ]
+    },
+    "__shr": {
+      "summary": "运算符重载，对应右移位（>>）。将 BitSet128 的位整体右移指定的位数。",
+      "use_cases": [
+        "实现快捷的位位置调整。"
+      ],
+      "key_methods": [
+        "__shr"
+      ]
+    },
+    "__eq": {
+      "summary": "运算符重载，对应相等比较（==）。判断两个 BitSet128 的高低部分是否完全相同。",
+      "use_cases": [
+        "检查两个位集是否代表相同的标志组合。"
+      ],
+      "key_methods": [
+        "__lt",
+        "__le"
+      ]
+    }
+  }
+}
