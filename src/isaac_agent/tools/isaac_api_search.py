@@ -1,11 +1,22 @@
 """
 RAG Engine for Isaac API retrieval and search
+
+DEPRECATED: This module is superseded by vector_rag.py and rag_bridge.py.
+Use VectorRAG or RAGBridge from those modules instead.
 """
 
+import warnings
 from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
 from loguru import logger
 import json
+
+warnings.warn(
+    "isaac_api_search.py is deprecated. Use VectorRAG from vector_rag.py or "
+    "RAGBridge from rag_bridge.py instead.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
 
 class IsaacAPISearchTool:

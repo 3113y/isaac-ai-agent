@@ -7,7 +7,7 @@ name = "isaac-ai-agent"
 version = "0.1.0"
 description = "A workflow-driven AI system for generating The Binding of Isaac: Repentance mod code using LangGraph"
 readme = "README.md"
-requires-python = "==3.12"
+requires-python = ">=3.11"
 license = {text = "MIT"}
 authors = [
     {name = "Agent Architect", email = "dev@isaac-agent.local"}
@@ -60,7 +60,7 @@ dev = [
     "pytest-asyncio>=0.21.0",
     "pytest-cov>=4.1.0",
     "black>=23.10.0",
-    "ruff>=0.31.0",
+    "ruff>=0.1.0",
     "mypy>=1.7.0",
     "ipython>=8.16.0",
     "jupyter>=1.0.0",
@@ -77,8 +77,13 @@ all-llms = [
     "zhipuai>=1.0.0",
 ]
 
+gui = [
+    "nicegui>=1.4.0",
+    "Pygments>=2.15.0",
+]
+
 [tool.uv]
-python-version = "3.11"
+required-version = ">=0.4.0"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/isaac_agent"]

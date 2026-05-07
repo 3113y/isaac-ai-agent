@@ -21,6 +21,7 @@ class ModRequest(BaseModel):
     session_id: Optional[str] = None
     llm_provider: Optional[str] = None  # openai, glm, deepseek (optional)
     llm_model: Optional[str] = None  # specific model name like gpt-4-turbo
+    llm_api_key: Optional[str] = None  # user's own API key
     temperature: Optional[float] = None  # LLM temperature
 
 
@@ -76,7 +77,7 @@ async def lifespan(app: FastAPI):
 # Create FastAPI app
 app = FastAPI(
     title="Isaac AI Agent API",
-    description="AI-powered mod code generation for The Binding of Isaac: Repentance",
+    description="AI 驱动的《以撒的结合：忏悔》Mod 代码生成",
     version="0.1.0",
     lifespan=lifespan,
 )
@@ -104,30 +105,31 @@ async def generate_mod(request: ModRequest):
         ModResponse with generated code artifacts
     """
     if agent is None and not request.llm_provider:
-        raise HTTPException(status_code=503, detail="Agent not initialized and no LLM provider specified")
+        raise HTTPException(status_code=503, detail="智能体未初始化且未指定 LLM 提供商")
     
     logger.info(f"📝 Received mod generation request: {request.user_input}")
     
     try:
         # Use specified LLM provider if provided, otherwise use default agent
         working_agent = agent
-        
+
         if request.llm_provider:
-            logger.info(f"🔄 Creating agent with {request.llm_provider} model")
+            logger.info(f"Creating agent with {request.llm_provider} model")
             llm = init_llm(
                 provider=request.llm_provider,
                 model=request.llm_model,
+                api_key=request.llm_api_key,
                 temperature=request.temperature,
             )
             if llm is None:
                 raise HTTPException(
                     status_code=400,
-                    detail=f"Failed to initialize {request.llm_provider} LLM provider"
+                    detail=f"无法初始化 {request.llm_provider} LLM 提供商"
                 )
             working_agent = MainAgent(llm=llm)
         
         if working_agent is None:
-            raise HTTPException(status_code=503, detail="Agent not available")
+            raise HTTPException(status_code=503, detail="智能体不可用")
         
         # Run the workflow
         result = await working_agent.run(request.user_input)
@@ -166,16 +168,19 @@ async def generate_mod(request: ModRequest):
 async def get_agent_info():
     """Get information about the agent"""
     if agent is None:
-        raise HTTPException(status_code=503, detail="Agent not initialized")
-    
-    return agent.get_workflow_info()
+        raise HTTPException(status_code=503, detail="智能体未初始化")
+
+    info = agent.get_workflow_info()
+    info["detected_mods_dir"] = str(agent.mods_dir) if agent.mods_dir else None
+    info["detected_log_file"] = str(agent.log_file) if agent.log_file else None
+    return info
 
 
 @app.get("/api/categories")
 async def get_api_categories():
     """Get available API categories"""
     if agent is None:
-        raise HTTPException(status_code=503, detail="Agent not initialized")
+        raise HTTPException(status_code=503, detail="智能体未初始化")
     
     return {
         "categories": agent.api_search_tool.list_categories()
@@ -186,7 +191,7 @@ async def get_api_categories():
 async def get_templates():
     """List all available Lua templates"""
     if agent is None:
-        raise HTTPException(status_code=503, detail="Agent not initialized")
+        raise HTTPException(status_code=503, detail="智能体未初始化")
     
     return {
         "templates": agent.template_manager.list_templates(),
@@ -198,10 +203,10 @@ async def get_templates():
 async def get_template(template_name: str):
     """Get a specific template"""
     if agent is None:
-        raise HTTPException(status_code=503, detail="Agent not initialized")
+        raise HTTPException(status_code=503, detail="智能体未初始化")
     
     if not agent.template_manager.validate_template(template_name):
-        raise HTTPException(status_code=404, detail=f"Template '{template_name}' not found")
+        raise HTTPException(status_code=404, detail=f"模板 '{template_name}' 未找到")
     
     return {
         "name": template_name,
@@ -214,21 +219,44 @@ async def get_template(template_name: str):
 async def search_api(query: str):
     """Search Isaac API"""
     if agent is None:
-        raise HTTPException(status_code=503, detail="Agent not initialized")
-    
+        raise HTTPException(status_code=503, detail="智能体未初始化")
+
     results = agent.api_search_tool.search(query)
     return {"query": query, "results": results}
 
 
-# Health check on startup
-@app.on_event("startup")
-async def startup_event():
-    """Startup event"""
-    logger.info("API server starting up")
+class LogAnalyzeRequest(BaseModel):
+    """Request model for log error analysis"""
+    source_code: str = ""
+    mod_name: str = "isaac_mod"
 
 
-# Shutdown event
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Shutdown event"""
-    logger.info("API server shutting down")
+@app.post("/log/analyze")
+async def analyze_log(request: LogAnalyzeRequest):
+    """Analyze the Isaac log file for Lua errors and suggest fixes."""
+    if agent is None:
+        raise HTTPException(status_code=503, detail="智能体未初始化")
+
+    try:
+        analysis = agent.analyze_log_errors(
+            source_code=request.source_code,
+            mod_name=request.mod_name,
+        )
+        return analysis
+    except Exception as e:
+        logger.error(f"Log analysis failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/paths")
+async def get_detected_paths():
+    """Get auto-detected Isaac paths (mods dir + log file)."""
+    if agent is None:
+        raise HTTPException(status_code=503, detail="智能体未初始化")
+
+    return {
+        "mods_dir": str(agent.mods_dir) if agent.mods_dir else None,
+        "log_file": str(agent.log_file) if agent.log_file else None,
+    }
+
+

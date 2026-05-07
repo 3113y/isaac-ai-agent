@@ -314,61 +314,60 @@ mods/
 ```
 AgentTheIsaac/
 │
-├── 🔧 工程化文件
-├── docker-compose.yml         # 容器编排配置
-├── Dockerfile                 # Python 环境镜像
-├── pyproject.toml            # 项目配置和依赖
-├── Makefile                  # 开发任务自动化
+├── docker-compose.yml
+├── Dockerfile
+├── pyproject.toml
+├── Makefile
+├── README.md
 │
-├── 📂 .devcontainer/
-│   ├── devcontainer.json     # VS Code 开发容器
-│   └── post-create.sh        # 初始化脚本
+├── 📂 src/isaac_agent/
+│   ├── __init__.py
+│   ├── api.py                 # FastAPI 应用 (7 端点)
+│   ├── config.py              # pydantic-settings 配置
+│   ├── llm_factory.py         # LLM 提供商工厂
+│   ├── logger.py              # loguru 日志
+│   ├── build.py               # Mod 输出构建器
+│   │
+│   ├── 🧠 core/
+│   │   ├── agent.py           # MainAgent & LangGraph 工作流
+│   │   ├── state.py           # AgentState 数据模型
+│   │   └── __init__.py
+│   │
+│   ├── 🔍 tools/
+│   │   ├── vector_rag.py      # FAISS 向量搜索 (主)
+│   │   ├── rag_bridge.py      # 知识库桥接层
+│   │   ├── isaac_api_search.py  # [已废弃]
+│   │   └── __init__.py
+│   │
+│   ├── 📋 templates/
+│   │   ├── lua_skeletons.py   # 7 个 Lua 模板
+│   │   └── __init__.py
+│   │
+│   └── 📂 examples/
+│       ├── generate_samples.py # 示例 Mod 生成
+│       └── __init__.py
 │
-├── 📂 src/
-│   └── isaac_agent/
-│       │
-│       ├── __init__.py
-│       │
-│       ├── 🧠 core/           # 核心工作流
-│       │   ├── agent.py       # MainAgent & StateGraph
-│       │   ├── state.py       # AgentState 数据模型
-│       │   └── __init__.py
-│       │
-│       ├── 🔍 tools/          # RAG 工具
-│       │   ├── isaac_api_search.py  # API 检索工具
-│       │   └── __init__.py
-│       │
-│       ├── 📋 templates/      # Lua 代码模板库
-│       │   ├── lua_skeletons.py     # 模板集合
-│       │   └── __init__.py
-│       │
-│       ├── 🌐 api/            # FastAPI 应用 [待实现]
-│       │   ├── app.py
-│       │   └── routes.py
-│       │
-│       └── 📦 utils/          # 工具函数 [待实现]
-│           ├── config.py
-│           └── logger.py
+├── 📂 tests/
+│   ├── test_core.py           # 工作流 + 模板 + RAG
+│   ├── test_llm_factory.py    # LLM 工厂
+│   ├── test_rag_bridge.py     # RAG 桥接层
+│   └── test_api.py            # FastAPI 端点
 │
-├── 📂 tests/                  # 单元测试 [待实现]
-│   ├── test_parser.py
-│   ├── test_retrieval.py
-│   ├── test_generator.py
-│   └── test_validator.py
+├── 📂 processed_docs/
+│   ├── rag_knowledge_base.json  # 1,557 条 API 条目
+│   └── processed_apis.json
 │
-├── 📂 mods/                   # 生成的模组输出
-│   └── example_mod/
-│       ├── main.lua
-│       └── metadata.xml
+├── 📂 scripts/
+│   └── document_processor.py  # 知识库处理器
 │
-├── 📂 examples/               # 示例和演示 [待实现]
-│   ├── custom_item.py
-│   ├── custom_enemy.py
-│   └── event_system.py
+├── demo_rag.py                # RAG 演示
+├── demo_llm_providers.py      # LLM 演示
+├── test_api_integration.py    # API 集成测试
 │
-├── 📄 README.md              # 此文件
-├── 📄 CONTRIBUTING.md        # 贡献指南 [待实现]
-└── 📄 LICENSE                # MIT License
+├── RAG_SYSTEM.md              # RAG 系统文档
+├── MULTI_LLM.md               # 多 LLM 配置指南
+├── CONTRIBUTING.md            # 贡献指南
+└── LICENSE
 ```
 
 ---
@@ -495,14 +494,12 @@ COMPLETE → 导出完整模组
 ## 🧪 测试
 
 ```bash
-# 运行所有测试
+# 运行所有测试 (44 项)
 make test
 
 # 特定测试文件
-pytest tests/test_parser.py -v
-
-# 生成覆盖率报告
-pytest --cov=src --cov-report=html
+uv run pytest tests/test_core.py -v -o "addopts="
+uv run pytest tests/test_api.py -v -o "addopts="
 ```
 
 ---

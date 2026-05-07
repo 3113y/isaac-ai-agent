@@ -5,7 +5,7 @@ Supports: OpenAI (GPT), GLM (Qwen/智谱), Deepseek
 
 from typing import Optional
 from loguru import logger
-from langchain_core.language_model.base import BaseLanguageModel
+from langchain_core.language_models import BaseLanguageModel
 
 from isaac_agent.config import settings
 
@@ -105,6 +105,14 @@ def _init_deepseek_llm(
     )
 
 
+# Default models for each provider when user doesn't specify
+_DEFAULT_MODELS = {
+    "openai": "gpt-4-turbo",
+    "glm": "glm-4",
+    "deepseek": "deepseek-chat",
+}
+
+
 def init_llm(
     provider: Optional[str] = None,
     model: Optional[str] = None,
@@ -113,26 +121,33 @@ def init_llm(
     max_tokens: Optional[int] = None,
 ) -> Optional[BaseLanguageModel]:
     """
-    Initialize LLM from provider
-    
+    Initialize LLM from provider.
+
+    The api_key parameter takes priority over env vars / .env config.
+    This allows each user to supply their own key in the UI.
+
     Args:
         provider: LLM provider ("openai", "glm", "deepseek")
-        model: Model name to use
-        api_key: API key for the provider
+        model: Model name to use (auto-filled from defaults if omitted)
+        api_key: API key for the provider — user-provided, takes priority
         temperature: Temperature for sampling
         max_tokens: Max tokens to generate
-    
+
     Returns:
         BaseLanguageModel instance or None if provider not configured
     """
     provider = provider or settings.llm_provider
-    
+
     if not provider:
-        logger.warning("⚠️  No LLM provider configured")
+        logger.warning("No LLM provider configured")
         return None
-    
+
     provider = provider.lower().strip()
-    
+
+    # Auto-fill model name from defaults if not specified
+    if not model:
+        model = _DEFAULT_MODELS.get(provider, settings.openai_model)
+
     try:
         if provider == "openai" or provider == "gpt":
             return _init_openai_llm(api_key, model, temperature, max_tokens)
@@ -141,9 +156,9 @@ def init_llm(
         elif provider == "deepseek":
             return _init_deepseek_llm(api_key, model, temperature, max_tokens)
         else:
-            logger.error(f"❌ Unknown LLM provider: {provider}")
-            logger.info("✅ Supported providers: openai, glm, deepseek")
+            logger.error(f"Unknown LLM provider: {provider}")
+            logger.info("Supported providers: openai, glm, deepseek")
             return None
     except Exception as e:
-        logger.error(f"❌ Failed to initialize {provider} LLM: {e}")
+        logger.error(f"Failed to initialize {provider} LLM: {e}")
         return None

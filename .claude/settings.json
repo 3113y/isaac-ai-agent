@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -oP '.{0,100}dark.{0,100}' /workspaces/AgentTheIsaac/.venv/lib/python3.12/site-packages/nicegui/static/nicegui.js)"
+    ]
+  }
+}

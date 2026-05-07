@@ -2,7 +2,28 @@
   "permissions": {
     "allow": [
       "Bash(python -m pytest tests/ -v --tb=short)",
-      "Bash(python3 -c ' *)"
+      "Bash(python3 -c ' *)",
+      "Bash(python3 -c \"import json; data=json.load\\(open\\('/workspaces/AgentTheIsaac/processed_docs/rag_knowledge_base.json'\\)\\); print\\(f'Total entries: {len\\(data\\)}'\\); print\\('First entry keys:', list\\(data[0].keys\\(\\)\\) if data else 'EMPTY'\\); print\\('Sample entry[0]:', json.dumps\\(data[0], indent=2\\)[:1500]\\)\")",
+      "Bash(pip install *)",
+      "Bash(python -m pytest tests/test_rag_bridge.py tests/test_core.py -v -p no:cacheprovider -o \"addopts=\")",
+      "Bash(python -m pytest tests/test_rag_bridge.py tests/test_core.py -v -p no:cacheprovider -o \"addopts=\" --asyncio-mode=auto)",
+      "Bash(python demo_rag.py --stats-only)",
+      "Bash(PYTHONPATH=src python demo_rag.py --stats-only)",
+      "Bash(python -c \"import loguru; print\\('loguru ok'\\)\")",
+      "Bash(pip show *)",
+      "Bash(/usr/local/bin/python -c \"import loguru; print\\('ok'\\)\")",
+      "Bash(json\\\\n{\\\\\"b\\\\\": 2}\\\\n)",
+      "Bash(/usr/local/bin/python -c ' *)",
+      "Bash(/usr/local/bin/python -m pytest tests/test_core.py tests/test_rag_bridge.py -v -p no:cacheprovider -o \"addopts=\" --asyncio-mode=auto)",
+      "Bash(apt list *)",
+      "Bash(pip list *)",
+      "Bash(apt-get install *)",
+      "Bash(luarocks install *)",
+      "Bash(python -m pytest tests/test_core.py tests/test_rag_bridge.py -v --asyncio-mode=auto)",
+      "Bash(.venv/bin/pip install *)",
+      "Bash(/workspaces/AgentTheIsaac/.venv/bin/python3 -m pytest tests/test_core.py tests/test_rag_bridge.py -v --asyncio-mode=auto)",
+      "Bash(/workspaces/AgentTheIsaac/.venv/bin/python3 -m pip install pytest-cov)",
+      "Bash(timeout 20 bash -c ' *)"
     ]
   }
 }

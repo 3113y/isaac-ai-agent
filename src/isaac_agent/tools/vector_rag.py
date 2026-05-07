@@ -18,20 +18,29 @@ except ImportError:
 
 try:
     from langchain_openai import OpenAIEmbeddings
-    from langchain_community.embeddings import HuggingFaceEmbeddings
     EMBEDDINGS_AVAILABLE = True
 except ImportError:
     EMBEDDINGS_AVAILABLE = False
-    logger.warning("⚠️  Embeddings not available. Install with: pip install sentence-transformers langchain-openai")
+
+try:
+    from langchain_huggingface import HuggingFaceEmbeddings
+    HF_EMBEDDINGS_AVAILABLE = True
+except ImportError:
+    HF_EMBEDDINGS_AVAILABLE = False
+    try:
+        from langchain_community.embeddings import HuggingFaceEmbeddings
+        HF_EMBEDDINGS_AVAILABLE = True
+    except ImportError:
+        HF_EMBEDDINGS_AVAILABLE = False
 
 
 class IsaacAPIDatabase:
     """
     Complete Isaac API Database with 30+ documented functions.
-    
+
     This is an expanded version of the API reference for more comprehensive RAG.
     """
-    
+
     DATABASE = {
         # Core Registration
         "RegisterMod": {
@@ -46,7 +55,7 @@ class IsaacAPIDatabase:
             "example_code": "local mod = RegisterMod('MyMod', 1)",
             "tags": ["initialization", "core", "registration"],
         },
-        
+
         # Callbacks
         "MC_POST_GAME_STARTED": {
             "category": "Game Lifecycle",
@@ -56,7 +65,7 @@ class IsaacAPIDatabase:
             "example_code": "mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function(continued) end)",
             "tags": ["lifecycle", "game-start", "event"],
         },
-        
+
         "MC_POST_UPDATE": {
             "category": "Game Lifecycle",
             "parameters": [],
@@ -65,7 +74,7 @@ class IsaacAPIDatabase:
             "example_code": "mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function() end)",
             "tags": ["lifecycle", "update", "event", "frame"],
         },
-        
+
         "MC_POST_NEW_ROOM": {
             "category": "Room Events",
             "parameters": [],
@@ -74,7 +83,7 @@ class IsaacAPIDatabase:
             "example_code": "mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function() end)",
             "tags": ["room", "event", "navigation"],
         },
-        
+
         "MC_POST_ROOM_CLEAR": {
             "category": "Room Events",
             "parameters": [],
@@ -83,7 +92,7 @@ class IsaacAPIDatabase:
             "example_code": "mod:AddCallback(ModCallbacks.MC_POST_ROOM_CLEAR, function() end)",
             "tags": ["room", "enemies", "victory", "event"],
         },
-        
+
         # Entity Operations
         "EntitySpawn": {
             "category": "Entity Management",
@@ -98,7 +107,7 @@ class IsaacAPIDatabase:
             "example_code": "Isaac.Spawn(EntityType.ENTITY_TEAR, 0, 0, Vector(100, 100))",
             "tags": ["entity", "spawn", "creation"],
         },
-        
+
         "GetPlayer": {
             "category": "Player Access",
             "parameters": [{"name": "index", "type": "integer", "optional": True}],
@@ -107,7 +116,7 @@ class IsaacAPIDatabase:
             "example_code": "local player = Isaac.GetPlayer(0)",
             "tags": ["player", "entity", "access"],
         },
-        
+
         "GetEntityCount": {
             "category": "Entity Query",
             "parameters": [{"name": "type", "type": "integer", "optional": True}],
@@ -116,7 +125,7 @@ class IsaacAPIDatabase:
             "example_code": "local count = Isaac.GetEntityCount()",
             "tags": ["entity", "query", "count"],
         },
-        
+
         # Item Operations
         "GetItemIdByName": {
             "category": "Item Management",
@@ -126,7 +135,7 @@ class IsaacAPIDatabase:
             "example_code": "local itemId = Isaac.GetItemIdByName('Sad Onion')",
             "tags": ["item", "lookup", "id"],
         },
-        
+
         "AddCallback": {
             "category": "Event System",
             "parameters": [
@@ -139,7 +148,7 @@ class IsaacAPIDatabase:
             "example_code": "mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function() print('update') end)",
             "tags": ["callbacks", "event-system", "registration"],
         },
-        
+
         "OnItemPickup": {
             "category": "Item Events",
             "parameters": [
@@ -151,7 +160,7 @@ class IsaacAPIDatabase:
             "example_code": "function mod:OnItemPickup(item, player) end",
             "tags": ["item", "pickup", "event", "player"],
         },
-        
+
         "OnEntityTakeDamage": {
             "category": "Entity Events",
             "parameters": [
@@ -165,7 +174,7 @@ class IsaacAPIDatabase:
             "example_code": "mod:AddCallback(ModCallbacks.MC_ENTITY_TAKE_DMG, function(entity, damage) end)",
             "tags": ["damage", "entity", "combat", "event"],
         },
-        
+
         # Room Operations
         "GetRoom": {
             "category": "Room Access",
@@ -175,7 +184,7 @@ class IsaacAPIDatabase:
             "example_code": "local room = Game():GetRoom()",
             "tags": ["room", "access", "current"],
         },
-        
+
         "GetRoomData": {
             "category": "Room Query",
             "parameters": [],
@@ -184,7 +193,7 @@ class IsaacAPIDatabase:
             "example_code": "local roomData = Game():GetRoom():GetRoomData()",
             "tags": ["room", "data", "properties"],
         },
-        
+
         "GetDescendants": {
             "category": "Entity Query",
             "parameters": [
@@ -196,7 +205,7 @@ class IsaacAPIDatabase:
             "example_code": "local tears = Game():GetRoom():GetDescendants(EntityType.ENTITY_TEAR)",
             "tags": ["entity", "query", "descendants"],
         },
-        
+
         # Tear/Explosion Operations
         "SpawnTear": {
             "category": "Tear Operations",
@@ -210,7 +219,7 @@ class IsaacAPIDatabase:
             "example_code": "local tear = player:SpawnTear(position, velocity)",
             "tags": ["tear", "projectile", "spawn"],
         },
-        
+
         "SpawnExplosion": {
             "category": "Effect Operations",
             "parameters": [
@@ -222,7 +231,7 @@ class IsaacAPIDatabase:
             "example_code": "Game():SpawnExplosion(Vector(100, 100), entity)",
             "tags": ["explosion", "effect", "damage"],
         },
-        
+
         # Player Modifications
         "AddHearts": {
             "category": "Player Modification",
@@ -232,7 +241,7 @@ class IsaacAPIDatabase:
             "example_code": "player:AddHearts(2)",
             "tags": ["player", "health", "modification"],
         },
-        
+
         "AddSoulHearts": {
             "category": "Player Modification",
             "parameters": [{"name": "count", "type": "number"}],
@@ -241,7 +250,7 @@ class IsaacAPIDatabase:
             "example_code": "player:AddSoulHearts(2)",
             "tags": ["player", "soul-hearts", "modification"],
         },
-        
+
         "AddCoins": {
             "category": "Player Modification",
             "parameters": [{"name": "count", "type": "integer"}],
@@ -250,7 +259,7 @@ class IsaacAPIDatabase:
             "example_code": "player:AddCoins(10)",
             "tags": ["player", "coins", "currency"],
         },
-        
+
         "AddBombs": {
             "category": "Player Modification",
             "parameters": [{"name": "count", "type": "integer"}],
@@ -259,7 +268,7 @@ class IsaacAPIDatabase:
             "example_code": "player:AddBombs(5)",
             "tags": ["player", "bombs", "items"],
         },
-        
+
         "AddKeys": {
             "category": "Player Modification",
             "parameters": [{"name": "count", "type": "integer"}],
@@ -268,7 +277,7 @@ class IsaacAPIDatabase:
             "example_code": "player:AddKeys(3)",
             "tags": ["player", "keys", "items"],
         },
-        
+
         # Item Granting
         "AddItemFromPool": {
             "category": "Item Granting",
@@ -281,7 +290,7 @@ class IsaacAPIDatabase:
             "example_code": "player:AddItemFromPool('treasure', 0)",
             "tags": ["item", "grant", "pool"],
         },
-        
+
         # Stat Modifications
         "AddBlueFly": {
             "category": "Familiar Management",
@@ -291,7 +300,7 @@ class IsaacAPIDatabase:
             "example_code": "player:AddBluflyFromPool(1)",
             "tags": ["familiar", "fly", "helper"],
         },
-        
+
         # Save Management
         "SaveData": {
             "category": "Persistence",
@@ -301,7 +310,7 @@ class IsaacAPIDatabase:
             "example_code": "mod:SaveData()",
             "tags": ["save", "persistence", "data"],
         },
-        
+
         # Vector Operations
         "Vector": {
             "category": "Math",
@@ -314,8 +323,8 @@ class IsaacAPIDatabase:
             "example_code": "local pos = Vector(100, 100)",
             "tags": ["math", "vector", "position"],
         },
-        
-        # Random Operations  
+
+        # Random Operations
         "GetRandomInt": {
             "category": "Randomization",
             "parameters": [
@@ -333,44 +342,52 @@ class IsaacAPIDatabase:
 class VectorRAG:
     """
     Advanced RAG system with FAISS vector search and OpenAI embeddings.
-    
+
     Provides semantic search over Isaac API documentation.
+    Supports external document sources (from knowledge base) or falls back
+    to the built-in IsaacAPIDatabase.
     """
-    
+
     def __init__(
         self,
         embedding_model: str = "openai",
         faiss_index_path: Optional[str] = None,
         api_key: Optional[str] = None,
+        documents: Optional[List[Tuple[str, Dict[str, Any]]]] = None,
     ):
         """
         Initialize Vector RAG system.
-        
+
         Args:
             embedding_model: "openai" or "huggingface"
             faiss_index_path: Path to save/load FAISS index
             api_key: OpenAI API key (if using OpenAI embeddings)
+            documents: Optional list of (doc_text, metadata) pairs from an external source.
+                       When provided, these are indexed instead of IsaacAPIDatabase.DATABASE.
         """
         self.embedding_model_name = embedding_model
         self.index_path = Path(faiss_index_path or "./data/isaac_api.faiss")
         self.metadata_path = Path(str(self.index_path).replace(".faiss", "_metadata.pkl"))
-        
+
         self.embeddings = None
         self.index = None
         self.documents = []
         self.metadata = []
-        
+
+        # External documents take priority over the built-in database
+        self._external_documents = documents
+
         self._initialize_embeddings(embedding_model, api_key)
         self._load_or_build_index()
-        
+
         logger.info("✅ Vector RAG System initialized")
-    
+
     def _initialize_embeddings(self, model: Optional[str], api_key: Optional[str]):
         """Initialize embedding model"""
         if not model or model == "fallback":
             logger.warning("⚠️  Using fallback keyword search mode")
             return
-        
+
         if model == "openai":
             if not EMBEDDINGS_AVAILABLE:
                 logger.warning("⚠️  langchain-openai not installed, falling back to HuggingFace")
@@ -383,8 +400,8 @@ class VectorRAG:
                 logger.warning(f"⚠️  OpenAI embeddings failed: {e}, falling back to HuggingFace")
                 self._initialize_embeddings("huggingface", None)
         elif model == "huggingface":
-            if not EMBEDDINGS_AVAILABLE:
-                logger.warning("⚠️  sentence-transformers not installed, using fallback search")
+            if not HF_EMBEDDINGS_AVAILABLE:
+                logger.warning("⚠️  HuggingFace embeddings not available, using fallback search")
                 return
             try:
                 self.embeddings = HuggingFaceEmbeddings(
@@ -397,7 +414,7 @@ class VectorRAG:
                 logger.warning("⚠️  Falling back to keyword search")
         else:
             logger.error(f"❌ Unknown embedding model: {model}")
-    
+
     def _load_or_build_index(self):
         """Load existing index or build new one"""
         if self.index_path.exists() and self.metadata_path.exists():
@@ -409,166 +426,186 @@ class VectorRAG:
                 self._build_index()
         else:
             self._build_index()
-    
-    def _build_index(self):
-        """Build FAISS index from API database"""
-        if not FAISS_AVAILABLE or not self.embeddings:
-            logger.warning("⚠️  FAISS or embeddings not available, using fallback")
-            return
-        
-        logger.info("🔨 Building FAISS index...")
-        
-        # Prepare documents
-        self.documents = []
+
+    def _prepare_documents(self) -> Tuple[List[str], List[Dict[str, Any]]]:
+        """Return (doc_texts, metadata) pairs from external source or legacy DB."""
+        if self._external_documents:
+            docs, metas = [], []
+            for doc_text, meta in self._external_documents:
+                docs.append(doc_text)
+                metas.append(meta)
+            return docs, metas
+
+        # Legacy path: build from IsaacAPIDatabase.DATABASE
+        docs, metas = [], []
         for func_name, func_info in IsaacAPIDatabase.DATABASE.items():
-            # Create document text combining all relevant fields
-            doc_text = f"{func_name}: {func_info.get('description', '')}. Category: {func_info.get('category', '')}. Tags: {', '.join(func_info.get('tags', []))}"
-            self.documents.append(doc_text)
-            self.metadata.append({
+            doc_text = (
+                f"{func_name}: {func_info.get('description', '')}. "
+                f"Category: {func_info.get('category', '')}. "
+                f"Tags: {', '.join(func_info.get('tags', []))}"
+            )
+            docs.append(doc_text)
+            metas.append({
                 "function_name": func_name,
                 "description": func_info.get("description", ""),
                 "category": func_info.get("category", ""),
                 "tags": func_info.get("tags", []),
+                "parameters": func_info.get("parameters", []),
+                "return_type": func_info.get("return_type", "void"),
+                "example_code": func_info.get("example_code", ""),
+                "source": "legacy_db",
             })
-        
+        return docs, metas
+
+    def _build_index(self):
+        """Build FAISS index from prepared documents"""
+        self.documents, self.metadata = self._prepare_documents()
+
+        if not self.documents:
+            logger.warning("⚠️  No documents to index")
+            return
+
+        if not FAISS_AVAILABLE or not self.embeddings:
+            logger.warning("⚠️  FAISS or embeddings not available, using fallback (metadata populated)")
+            return
+
         # Generate embeddings
         logger.info(f"📊 Embedding {len(self.documents)} API functions...")
         embeddings_list = self.embeddings.embed_documents(self.documents)
         embeddings_array = np.array(embeddings_list).astype("float32")
-        
+
         # Build FAISS index
         dimension = embeddings_array.shape[1]
         self.index = faiss.IndexFlatL2(dimension)
         self.index.add(embeddings_array)
-        
+
         # Save index
         self.index_path.parent.mkdir(parents=True, exist_ok=True)
         faiss.write_index(self.index, str(self.index_path))
-        
+
         with open(self.metadata_path, "wb") as f:
             pickle.dump(self.metadata, f)
-        
-        logger.info(f"💾 Saved FAISS index to {self.index_path}")
-    
+
+        logger.info(f"💾 Saved FAISS index ({len(self.documents)} docs) to {self.index_path}")
+
     def _load_index(self):
         """Load FAISS index and metadata"""
         if not FAISS_AVAILABLE:
             return
-        
+
         self.index = faiss.read_index(str(self.index_path))
-        
+
         with open(self.metadata_path, "rb") as f:
             self.metadata = pickle.load(f)
-    
+
     def search(self, query: str, top_k: int = 5) -> List[Dict[str, Any]]:
         """
         Search for relevant API functions using vector similarity.
-        
+
         Args:
             query: Natural language query
             top_k: Number of results to return
-            
+
         Returns:
-            List of matching API references
+            List of matching API references with metadata
         """
         if not self.embeddings or not self.index:
             logger.warning("⚠️  Vector search not available, using fallback")
             return self._fallback_search(query)
-        
+
         logger.info(f"🔍 Searching for: {query}")
-        
+
         # Embed query
         query_embedding = np.array([self.embeddings.embed_query(query)]).astype("float32")
-        
+
         # Search index
-        distances, indices = self.index.search(query_embedding, min(top_k, len(self.metadata)))
-        
+        k = min(top_k, len(self.metadata))
+        distances, indices = self.index.search(query_embedding, k)
+
         results = []
         for idx, distance in zip(indices[0], distances[0]):
             if idx >= 0 and idx < len(self.metadata):
-                meta = self.metadata[idx]
-                func_name = meta["function_name"]
-                func_info = IsaacAPIDatabase.DATABASE.get(func_name, {})
-                
-                results.append({
-                    "function_name": func_name,
-                    "category": func_info.get("category", ""),
-                    "description": func_info.get("description", ""),
-                    "parameters": func_info.get("parameters", []),
-                    "return_type": func_info.get("return_type", "void"),
-                    "example_code": func_info.get("example_code", ""),
-                    "tags": func_info.get("tags", []),
-                    "score": float(distance),
-                })
-        
+                meta = dict(self.metadata[idx])
+                meta["score"] = float(distance)
+                results.append(meta)
+
         logger.info(f"✅ Found {len(results)} matching functions")
         return results
-    
+
     def _fallback_search(self, query: str) -> List[Dict[str, Any]]:
-        """Fallback keyword-based search"""
+        """Fallback keyword-based search over metadata"""
         query_lower = query.lower()
         results = []
-        
-        for func_name, func_info in IsaacAPIDatabase.DATABASE.items():
-            # Score based on keyword matches
+
+        for meta in self.metadata:
             score = 0
-            if query_lower in func_name.lower():
+            name = meta.get("function_name") or meta.get("function", "")
+            desc = meta.get("description", "")
+            signature = meta.get("signature", "")
+
+            if query_lower in name.lower():
                 score += 10
-            if query_lower in func_info.get("description", "").lower():
+            if query_lower in desc.lower():
                 score += 5
-            for tag in func_info.get("tags", []):
-                if query_lower in tag.lower():
-                    score += 3
-            
+            if query_lower in signature.lower():
+                score += 3
+
+            # Check tags if present
+            tags = meta.get("tags", [])
+            if isinstance(tags, list):
+                for tag in tags:
+                    if query_lower in str(tag).lower():
+                        score += 3
+
+            # Check enhancement summary if present
+            enhancement = meta.get("enhancement", {})
+            if isinstance(enhancement, dict):
+                summary = enhancement.get("summary", "")
+                if query_lower in summary.lower():
+                    score += 4
+
             if score > 0:
-                results.append({
-                    "function_name": func_name,
-                    "category": func_info.get("category", ""),
-                    "description": func_info.get("description", ""),
-                    "parameters": func_info.get("parameters", []),
-                    "return_type": func_info.get("return_type", "void"),
-                    "example_code": func_info.get("example_code", ""),
-                    "tags": func_info.get("tags", []),
-                    "score": score,
-                })
-        
-        # Sort by score
+                result = dict(meta)
+                result["score"] = score
+                results.append(result)
+
         results.sort(key=lambda x: x["score"], reverse=True)
         return results[:5]
-    
+
     def get_function_info(self, function_name: str) -> Optional[Dict[str, Any]]:
-        """Get detailed info about a specific function"""
-        if function_name not in IsaacAPIDatabase.DATABASE:
-            return None
-        
-        info = IsaacAPIDatabase.DATABASE[function_name]
-        return {
-            "function_name": function_name,
-            "category": info.get("category", ""),
-            "description": info.get("description", ""),
-            "parameters": info.get("parameters", []),
-            "return_type": info.get("return_type", "void"),
-            "example_code": info.get("example_code", ""),
-            "tags": info.get("tags", []),
-        }
-    
+        """Get detailed info about a specific function from metadata"""
+        for meta in self.metadata:
+            name = meta.get("function_name") or meta.get("function", "")
+            if name == function_name:
+                return dict(meta)
+        return None
+
     def list_categories(self) -> List[str]:
-        """List all API categories"""
+        """List all unique categories/groups from metadata"""
         categories = set()
-        for func_info in IsaacAPIDatabase.DATABASE.values():
-            categories.add(func_info.get("category", "Unknown"))
+        for meta in self.metadata:
+            # Support both 'category' (legacy) and 'class' (KB) as grouping
+            cat = meta.get("category") or meta.get("class", "Unknown")
+            categories.add(cat)
         return sorted(list(categories))
-    
+
     def get_apis_by_category(self, category: str) -> List[str]:
-        """Get all APIs in a category"""
+        """Get all API function names in a category/class"""
         return [
-            func_name for func_name, func_info in IsaacAPIDatabase.DATABASE.items()
-            if func_info.get("category") == category
+            meta.get("function_name") or meta.get("function", "")
+            for meta in self.metadata
+            if (meta.get("category") == category or meta.get("class") == category)
         ]
-    
+
     def export_database(self) -> Dict[str, Any]:
-        """Export complete API database"""
-        return IsaacAPIDatabase.DATABASE
+        """Export all indexed metadata"""
+        if self._external_documents:
+            return {
+                "source": "external",
+                "total_entries": len(self.metadata),
+                "entries": self.metadata,
+            }
+        return dict(IsaacAPIDatabase.DATABASE)
 
 
 # Backward compatibility wrapper
@@ -577,7 +614,7 @@ class IsaacAPISearchTool(VectorRAG):
     Backward compatible wrapper for the old IsaacAPISearchTool interface.
     Uses VectorRAG internally for semantic search.
     """
-    
+
     def __init__(self, use_embeddings: bool = True):
         """Initialize with vector search enabled"""
         embedding_model = "huggingface" if use_embeddings else "none"

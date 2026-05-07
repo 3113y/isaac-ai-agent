@@ -80,6 +80,7 @@ class AgentState:
     
     # Retrieved references
     api_references: List[APIReference] = field(default_factory=list)
+    api_context: List[str] = field(default_factory=list)
     template_matches: List[str] = field(default_factory=list)
     
     # Generated artifacts
@@ -118,6 +119,7 @@ class AgentState:
             "user_input": self.user_input,
             "task": self.task.__dict__ if self.task else None,
             "api_references": [ref.__dict__ for ref in self.api_references],
+            "api_context": self.api_context,
             "generated_code": len(self.generated_code),
             "iterations": self.iterations,
             "errors": self.errors,

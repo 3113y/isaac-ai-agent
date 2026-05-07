@@ -1,4 +1,4 @@
-.PHONY: help dev down build test lint format clean install check-lua rag-demo rag-rebuild serve check info llm-demo llm-test llm-config
+.PHONY: help dev down build test lint format clean install check-lua rag-demo rag-rebuild serve check info llm-demo llm-test llm-config ui ui-install
 
 # Default target
 help:
@@ -28,6 +28,10 @@ help:
 	@echo "  make llm-test         Test LLM provider configuration"
 	@echo "  make llm-config       Show current LLM configuration"
 	@echo ""
+	@echo "🖥️  DESKTOP GUI (NEW!):"
+	@echo "  make ui               Launch the PyQt6 desktop application"
+	@echo "  make ui-install       Install GUI dependencies"
+	@echo ""
 	@echo "📚 API INTEGRATION (NEW!):"
 	@echo "  make test-api         Test API integration workflow"
 	@echo ""
@@ -51,6 +55,17 @@ dev:
 dev-background:
 	@echo "🚀 Starting development environment (background)..."
 	docker-compose up -d
+
+# Docker-based UI + API
+docker-up:
+	@echo "🐳 Starting UI (8080) + API (8000)..."
+	docker-compose up -d
+	@echo "✅ UI: http://127.0.0.1:8080"
+	@echo "✅ API: http://127.0.0.1:8000/docs"
+
+docker-down:
+	@echo "🛑 Stopping all Docker services..."
+	docker-compose down
 
 # Stop containers
 down:
@@ -157,12 +172,11 @@ rag-demo:
 
 rag-rebuild:
 	@echo "🔨 Rebuilding FAISS vector index..."
-	rm -f data/isaac_api.faiss data/isaac_api_metadata.pkl
-	python -c "from isaac_agent.tools.vector_rag import VectorRAG; rag = VectorRAG(embedding_model='huggingface'); print('✅ Index rebuilt successfully')"
+	python demo_rag.py --rebuild --stats-only
 
 rag-stats:
 	@echo "📊 RAG System Statistics:"
-	python -c "from isaac_agent.tools.vector_rag import IsaacAPIDatabase; db = IsaacAPIDatabase.DATABASE; print(f'  Total API functions: {len(db)}'); cats = set(f[\"category\"] for f in db.values()); print(f'  Total categories: {len(cats)}'); print(f'  Categories: {', '.join(sorted(cats))}')"
+	python demo_rag.py --stats-only
 
 # Multi-LLM System Commands
 llm-demo:
@@ -181,6 +195,14 @@ llm-test:
 test-api:
 	@echo "📚 Testing API Integration Workflow..."
 	python test_api_integration.py
+
+ui:
+	@echo "🖥️  Launching Isaac AI Agent GUI..."
+	uv run python -m isaac_agent.ui.app
+
+ui-install:
+	@echo "📦 Installing GUI dependencies..."
+	uv sync --extra gui
 
 convert-api:
 	@echo "🔄 Converting API documentation..."

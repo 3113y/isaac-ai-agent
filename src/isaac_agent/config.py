@@ -2,12 +2,17 @@
 Configuration management for Isaac AI Agent
 """
 
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
 from typing import Optional
 
 
 class Settings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        case_sensitive=False,
+        extra="ignore",
+    )
     """Application settings from environment variables"""
     
     # LLM Configuration (支持多个模型提供商)
@@ -35,8 +40,9 @@ class Settings(BaseSettings):
     api_debug: bool = Field(default=False, alias="API_DEBUG")
     
     # Database Configuration
-    faiss_index_path: str = Field(default="./data/isaac_api.index", alias="FAISS_INDEX_PATH")
+    faiss_index_path: str = Field(default="./data/isaac_api.faiss", alias="FAISS_INDEX_PATH")
     vector_db_type: str = Field(default="faiss", alias="VECTOR_DB_TYPE")
+    rag_kb_path: str = Field(default="./processed_docs/rag_knowledge_base.json", alias="RAG_KB_PATH")
     
     # Logging
     log_level: str = Field(default="INFO", alias="LOG_LEVEL")
@@ -46,14 +52,14 @@ class Settings(BaseSettings):
     isaac_mod_dir: str = Field(default="./mods", alias="ISAAC_MOD_DIR")
     isaac_version: str = Field(default="1.7", alias="ISAAC_VERSION")
     lua_validator: str = Field(default="luacheck", alias="LUA_VALIDATOR")
+
+    # Auto-detected paths (set at runtime, not from env)
+    detected_mods_dir: str = ""
+    detected_log_file: str = ""
     
     # Development
     dev_mode: bool = Field(default=False, alias="DEV_MODE")
     mock_api: bool = Field(default=True, alias="MOCK_API")
-    
-    class Config:
-        env_file = ".env"
-        case_sensitive = False
 
 
 # Global settings instance
