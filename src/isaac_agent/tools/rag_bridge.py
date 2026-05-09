@@ -55,6 +55,9 @@ class KnowledgeBaseLoader:
             description = entry.get("description", "")
             enhancement = entry.get("enhancement", {})
             class_enh = entry.get("class_enhancement", {})
+            versions = entry.get("versions", [])
+            modifiers = entry.get("modifiers", [])
+            libraries = entry.get("libraries", [])
 
             if isinstance(enhancement, dict):
                 summary = enhancement.get("summary", "")
@@ -69,10 +72,12 @@ class KnowledgeBaseLoader:
                 class_summary = ""
 
             use_cases_str = "; ".join(use_cases) if use_cases else ""
+            versions_str = ", ".join(versions) if versions else "All DLCs"
 
             # Rich document text for embedding
             doc_text = (
                 f"[{class_name}] {func_name} -- {signature}. "
+                f"Versions: {versions_str}. "
                 f"Summary: {summary}. "
                 f"Use cases: {use_cases_str}. "
                 f"Class context: {class_summary}. "
@@ -84,12 +89,15 @@ class KnowledgeBaseLoader:
                 "class": class_name,
                 "method_id": entry.get("method_id", ""),
                 "function": func_name,
-                "function_name": func_name,  # for backward compat with legacy VectorRAG
+                "function_name": func_name,
                 "signature": signature,
                 "description": description,
+                "versions": versions,
+                "modifiers": modifiers,
+                "libraries": libraries,
                 "enhancement": enhancement,
                 "class_enhancement": class_enh,
-                "category": class_name,  # for backward compat with legacy VectorRAG
+                "category": class_name,
                 "source": "knowledge_base",
             })
 
@@ -179,6 +187,9 @@ class RAGBridge:
             description = meta.get("description", "")
             enhancement = meta.get("enhancement", {})
             class_enh = meta.get("class_enhancement", {})
+            versions = meta.get("versions", [])
+            modifiers = meta.get("modifiers", [])
+            libraries = meta.get("libraries", [])
 
             if isinstance(enhancement, dict):
                 summary = enhancement.get("summary", "")
@@ -193,9 +204,11 @@ class RAGBridge:
                 class_summary = ""
 
             use_cases_str = "; ".join(use_cases) if use_cases else ""
+            versions_str = ", ".join(versions) if versions else "All DLCs"
 
             doc_text = (
                 f"[{class_name}] {func_name} -- {signature}. "
+                f"Versions: {versions_str}. "
                 f"Summary: {summary}. "
                 f"Use cases: {use_cases_str}. "
                 f"Class context: {class_summary}. "
@@ -205,21 +218,67 @@ class RAGBridge:
 
         return pairs
 
-    def search(self, query: str, top_k: int = 5) -> List[Dict[str, Any]]:
-        """Search the knowledge base and return enriched results."""
-        return self.vector_rag.search(query, top_k)
+    def search(
+        self,
+        query: str,
+        top_k: int = 5,
+        dlc_version: Optional[str] = None,
+        libraries: Optional[List[str]] = None,
+    ) -> List[Dict[str, Any]]:
+        """Search the knowledge base with optional version/library filtering.
 
-    def get_context_for_agent(self, query: str, top_k: int = 5) -> str:
+        Args:
+            query: Search query string.
+            top_k: Number of results to return (before filtering).
+            dlc_version: If set, only return APIs compatible with this DLC version
+                         (e.g. "REP", "REP+"). An API is compatible if it has no
+                         version restriction (empty versions list) or its versions
+                         list includes the target version.
+            libraries: If set, filter to APIs that require none of these libraries
+                       (empty libraries list) or at least one of the listed libraries.
+        """
+        results = self.vector_rag.search(query, top_k)
+
+        if dlc_version:
+            results = [
+                r for r in results
+                if not r.get("versions") or dlc_version in r.get("versions", [])
+            ]
+
+        if libraries:
+            entry_libs = set(r.get("libraries", []) for r in results if r.get("libraries"))
+            # Include entries with no library requirement (vanilla API)
+            # plus entries that use at least one of the requested libraries
+            results = [
+                r for r in results
+                if not r.get("libraries") or any(lib in r.get("libraries", []) for lib in libraries)
+            ]
+
+        return results
+
+    def get_context_for_agent(
+        self,
+        query: str,
+        top_k: int = 5,
+        dlc_version: Optional[str] = None,
+        libraries: Optional[List[str]] = None,
+    ) -> str:
         """
         Return formatted text context for LLM prompt injection.
 
         This is the primary Agent interface: takes a query, returns a
         formatted string the Agent can inject into its prompts.
         """
-        results = self.search(query, top_k)
+        results = self.search(query, top_k, dlc_version=dlc_version, libraries=libraries)
 
         if not results:
-            return f"[No API context found for query: {query}]"
+            filter_desc = []
+            if dlc_version:
+                filter_desc.append(f"DLC={dlc_version}")
+            if libraries:
+                filter_desc.append(f"libraries={libraries}")
+            suffix = f" (filtered by {', '.join(filter_desc)})" if filter_desc else ""
+            return f"[No API context found for query: {query}{suffix}]"
 
         lines = ["[API Context]"]
         for i, r in enumerate(results):
@@ -228,6 +287,9 @@ class RAGBridge:
             signature = r.get("signature", "")
             description = r.get("description", "")
             score = r.get("score", 0)
+            versions = r.get("versions", [])
+            modifiers = r.get("modifiers", [])
+            libs = r.get("libraries", [])
 
             enhancement = r.get("enhancement", {})
             if isinstance(enhancement, dict):
@@ -241,6 +303,16 @@ class RAGBridge:
             lines.append(f"Function: {class_name}.{func_name}")
             if signature:
                 lines.append(f"Signature: {signature}")
+            # Version badge
+            badge_parts = []
+            if versions:
+                badge_parts.append(f"DLC: {', '.join(versions)}")
+            if modifiers:
+                badge_parts.append(f"Modifiers: {', '.join(modifiers)}")
+            if libs:
+                badge_parts.append(f"Libraries: {', '.join(libs)}")
+            if badge_parts:
+                lines.append(f"Compatibility: {'; '.join(badge_parts)}")
             if summary:
                 lines.append(f"Summary: {summary}")
             if description:
@@ -252,11 +324,26 @@ class RAGBridge:
 
         return "\n".join(lines)
 
+    def list_available_versions(self) -> List[str]:
+        """List all DLC versions present in the knowledge base."""
+        if self.use_knowledge_base:
+            try:
+                entries = self.loader.load()
+                versions = set()
+                for e in entries:
+                    for v in e.get("versions", []):
+                        versions.add(v)
+                return sorted(versions)
+            except FileNotFoundError:
+                pass
+        return ["AB+", "REP", "REP+"]  # sensible defaults
+
     def rebuild_index(self) -> None:
         """Force rebuild the FAISS index from the knowledge base."""
         if not self.use_knowledge_base:
             logger.warning("Knowledge base disabled, rebuilding legacy index")
 
+        self.vector_rag._ensure_embeddings()
         self.vector_rag._build_index()
 
     def list_categories(self) -> List[str]:

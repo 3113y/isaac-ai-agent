@@ -262,15 +262,22 @@ class MainAgent:
     # Prompt builders
     # ------------------------------------------------------------------
 
-    def _build_parse_prompt(self) -> str:
+    def _build_parse_prompt(self, dlc_version: str = "REP+", libraries: list = None) -> str:
         """Build the system prompt for LLM-based task parsing."""
+        if libraries is None:
+            libraries = []
         templates = self.template_manager.list_templates()
         template_lines = "\n".join(
             f"  - {name}: {self.template_manager.get_template_description(name)}"
             for name in templates
         )
+        lib_note = ""
+        if libraries:
+            lib_note = f"\nThe user has selected these modding libraries as dependencies: {', '.join(libraries)}. Prefer API calls that are compatible with these libraries."
         return f"""You are an expert in The Binding of Isaac: Repentance Lua modding.
 Your job is to parse a user's mod request into a structured task definition.
+
+Target DLC version: {dlc_version}. Only suggest API functions that are compatible with this version.{lib_note}
 
 Given the user's natural language description, determine:
 1. A concise title and detailed description of the mod
@@ -297,10 +304,19 @@ Choose lua_scaffolds ONLY from the available list above. Choose api_calls using 
         task_title: str,
         task_description: str,
         api_context: str,
+        dlc_version: str = "REP+",
+        libraries: list = None,
     ) -> str:
         """Build the system prompt for LLM-based Lua code generation."""
+        if libraries is None:
+            libraries = []
+        lib_note = ""
+        if libraries:
+            lib_note = f"\nRequired modding libraries: {', '.join(libraries)}. Use their APIs where appropriate."
         return f"""You are an expert Lua modder for The Binding of Isaac: Repentance.
 Generate complete, working Lua mod code based on the task requirements.
+
+Target DLC version: {dlc_version}. Only use APIs compatible with {dlc_version}.{lib_note}
 
 Task: {task_title}
 Description: {task_description}
@@ -324,10 +340,12 @@ Instructions:
     # LLM-based task parsing
     # ------------------------------------------------------------------
 
-    async def _llm_parse(self, user_input: str) -> TaskDefinition:
+    async def _llm_parse(self, user_input: str, dlc_version: str = "REP+", libraries: list = None) -> TaskDefinition:
         """Use LLM to parse user input into a structured TaskDefinition."""
+        if libraries is None:
+            libraries = []
         messages = [
-            SystemMessage(content=self._build_parse_prompt()),
+            SystemMessage(content=self._build_parse_prompt(dlc_version=dlc_version, libraries=libraries)),
             HumanMessage(content=user_input),
         ]
         response = await self.llm.ainvoke(messages)
@@ -341,6 +359,8 @@ Instructions:
             description=parsed.get("description", user_input),
             api_calls=parsed.get("api_calls", []),
             lua_scaffolds=parsed.get("lua_scaffolds", []),
+            dlc_version=dlc_version,
+            libraries=libraries,
         )
         # Validate scaffolds against known templates
         valid_scaffolds = [
@@ -458,7 +478,11 @@ Instructions:
 
         if self.llm:
             try:
-                task = await self._llm_parse(state.user_input)
+                task = await self._llm_parse(
+                    state.user_input,
+                    dlc_version=state.dlc_version,
+                    libraries=state.libraries,
+                )
                 logger.info(f"🤖 LLM parsed: title='{task.title}', "
                             f"api_calls={task.api_calls}, scaffolds={task.lua_scaffolds}")
             except Exception as e:
@@ -490,12 +514,20 @@ Instructions:
         
         # Search for each API call mentioned in the task
         for api_call in state.task.api_calls:
-            results = self.api_search_tool.search(api_call)
+            results = self.api_search_tool.search(
+                api_call,
+                dlc_version=state.dlc_version,
+                libraries=state.libraries if state.libraries else None,
+            )
             state.api_references.extend(results)
 
             # Build formatted context for the Agent if available
             if hasattr(self.api_search_tool, 'get_context_for_agent'):
-                ctx = self.api_search_tool.get_context_for_agent(api_call)
+                ctx = self.api_search_tool.get_context_for_agent(
+                    api_call,
+                    dlc_version=state.dlc_version,
+                    libraries=state.libraries if state.libraries else None,
+                )
                 state.api_context.append(ctx)
         
         # Also get templates for scaffolds
@@ -556,6 +588,8 @@ Instructions:
                         task_description=state.task.description,
                         api_context=consolidated_context,
                         feedback=feedback,
+                        dlc_version=state.dlc_version,
+                        libraries=state.libraries,
                     )
                     logger.info(f"🤖 LLM generated code for {scaffold_name} "
                                 f"({len(lua_code)} chars)")
@@ -594,14 +628,20 @@ Instructions:
         task_description: str,
         api_context: str,
         feedback: str = "",
+        dlc_version: str = "REP+",
+        libraries: list = None,
     ) -> str:
         """Use LLM to generate Lua code from template + RAG context."""
+        if libraries is None:
+            libraries = []
         system_prompt = self._build_generation_prompt(
             scaffold_type=scaffold_type,
             template=template,
             task_title=task_title,
             task_description=task_description,
             api_context=api_context,
+            dlc_version=dlc_version,
+            libraries=libraries,
         )
         if feedback:
             system_prompt += feedback
@@ -720,6 +760,8 @@ Instructions:
         api_key: Optional[str] = None,
         provider: Optional[str] = None,
         model: Optional[str] = None,
+        dlc_version: str = "REP+",
+        libraries: Optional[List[str]] = None,
     ) -> AgentState:
         """
         Execute the complete workflow.
@@ -729,10 +771,14 @@ Instructions:
             api_key: User-provided API key (takes priority over env/config).
             provider: LLM provider override (openai/glm/deepseek).
             model: Model name override.
+            dlc_version: Target DLC version filter ("REP" or "REP+").
+            libraries: List of modding libraries to use (e.g. ["Curlib", "RGON"]).
 
         Returns:
             Final AgentState with generated artifacts.
         """
+        if libraries is None:
+            libraries = []
         # If user supplied their own API key, create a fresh LLM for this run
         if api_key and provider:
             from isaac_agent.llm_factory import init_llm
@@ -750,6 +796,8 @@ Instructions:
         initial_state = AgentState(
             session_id=session_id,
             user_input=user_input,
+            dlc_version=dlc_version,
+            libraries=libraries,
         )
 
         # Execute the compiled graph

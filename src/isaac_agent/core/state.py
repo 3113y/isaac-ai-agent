@@ -27,6 +27,8 @@ class TaskDefinition:
     lua_scaffolds: List[str] = field(default_factory=list)
     parameters: Dict[str, Any] = field(default_factory=dict)
     version: str = "1.0"
+    dlc_version: str = "REP+"
+    libraries: List[str] = field(default_factory=list)
 
 
 @dataclass
@@ -39,6 +41,8 @@ class APIReference:
     description: str = ""
     example_code: str = ""
     tags: List[str] = field(default_factory=list)
+    versions: List[str] = field(default_factory=list)
+    libraries: List[str] = field(default_factory=list)
 
 
 @dataclass
@@ -71,24 +75,28 @@ class AgentState:
     # Metadata
     session_id: str
     stage: WorkflowStage = WorkflowStage.PARSE
-    
+
     # Input
     user_input: str = ""
-    
+
+    # User preferences
+    dlc_version: str = "REP+"
+    libraries: List[str] = field(default_factory=list)
+
     # Parsed request
     task: Optional[TaskDefinition] = None
-    
+
     # Retrieved references
     api_references: List[APIReference] = field(default_factory=list)
     api_context: List[str] = field(default_factory=list)
     template_matches: List[str] = field(default_factory=list)
-    
+
     # Generated artifacts
     generated_code: List[GeneratedCode] = field(default_factory=list)
-    
+
     # Validation
     validation_results: List[ValidationResult] = field(default_factory=list)
-    
+
     # Metadata & tracking
     iterations: int = 0
     messages: List[Dict[str, str]] = field(default_factory=list)

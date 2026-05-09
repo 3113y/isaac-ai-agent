@@ -3,7 +3,10 @@ Advanced RAG System with FAISS Vector Search for Isaac API
 """
 
 import json
+import os
 import pickle
+import threading
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
 from pathlib import Path
 from typing import List, Dict, Any, Optional, Tuple
 import numpy as np
@@ -377,13 +380,81 @@ class VectorRAG:
         # External documents take priority over the built-in database
         self._external_documents = documents
 
-        self._initialize_embeddings(embedding_model, api_key)
+        # Lazy-init state: embeddings are loaded on first search(), not at construction
+        self._embeddings_config = (embedding_model, api_key)
+        self._embeddings_initialized = False
+        self._embeddings_lock = threading.Lock()
+        self._index_built = False
+
+        # Load existing FAISS index from disk eagerly (fast, no embeddings needed)
+        # If index doesn't exist yet, prepare documents but defer index building
         self._load_or_build_index()
 
-        logger.info("✅ Vector RAG System initialized")
+        logger.info("✅ Vector RAG System initialized (embeddings deferred)")
+
+    def _ensure_embeddings(self) -> bool:
+        """Lazily initialize embeddings on first use. Thread-safe. Returns True if ready."""
+        if self._embeddings_initialized:
+            return self.embeddings is not None
+
+        with self._embeddings_lock:
+            if self._embeddings_initialized:
+                return self.embeddings is not None
+
+            model, api_key = self._embeddings_config
+            self._initialize_embeddings(model, api_key)
+
+            # If embeddings are now ready and we have documents but no index, build it
+            if self.embeddings is not None and not self._index_built and self.documents:
+                self._build_index()
+                self._index_built = True
+
+            self._embeddings_initialized = True
+            return self.embeddings is not None
+
+    def _init_hf_embeddings_offline(self) -> bool:
+        """Try initializing HuggingFaceEmbeddings without network (cached model)."""
+        try:
+            prior = os.environ.get("HF_HUB_OFFLINE")
+            os.environ["HF_HUB_OFFLINE"] = "1"
+            self.embeddings = HuggingFaceEmbeddings(
+                model_name="sentence-transformers/all-MiniLM-L6-v2",
+                encode_kwargs={"normalize_embeddings": True},
+            )
+            return True
+        except Exception:
+            self.embeddings = None
+            return False
+        finally:
+            if prior is not None:
+                os.environ["HF_HUB_OFFLINE"] = prior
+            else:
+                os.environ.pop("HF_HUB_OFFLINE", None)
+
+    def _init_hf_embeddings_online(self) -> bool:
+        """Try initializing HuggingFaceEmbeddings with network, guarded by a 60s timeout."""
+        def _create():
+            return HuggingFaceEmbeddings(
+                model_name="sentence-transformers/all-MiniLM-L6-v2",
+                encode_kwargs={"normalize_embeddings": True},
+            )
+
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(_create)
+            try:
+                self.embeddings = future.result(timeout=60)
+                return True
+            except FutureTimeoutError:
+                logger.error("❌ Embeddings initialization timed out after 60s")
+                self.embeddings = None
+                return False
+            except Exception as e:
+                logger.error(f"❌ Failed to initialize embeddings: {e}")
+                self.embeddings = None
+                return False
 
     def _initialize_embeddings(self, model: Optional[str], api_key: Optional[str]):
-        """Initialize embedding model"""
+        """Initialize embedding model (called lazily from _ensure_embeddings)."""
         if not model or model == "fallback":
             logger.warning("⚠️  Using fallback keyword search mode")
             return
@@ -403,29 +474,38 @@ class VectorRAG:
             if not HF_EMBEDDINGS_AVAILABLE:
                 logger.warning("⚠️  HuggingFace embeddings not available, using fallback search")
                 return
-            try:
-                self.embeddings = HuggingFaceEmbeddings(
-                    model_name="sentence-transformers/all-MiniLM-L6-v2",
-                    encode_kwargs={"normalize_embeddings": True},
-                )
-                logger.info("🤗 HuggingFace Embeddings initialized")
-            except Exception as e:
-                logger.error(f"❌ Failed to initialize embeddings: {e}")
+
+            # Try offline first (model should be pre-cached via `make build`)
+            if self._init_hf_embeddings_offline():
+                logger.info("🤗 HuggingFace Embeddings initialized (cached)")
+                return
+
+            # Model not cached — try online with hard timeout
+            logger.warning("⚠️  Model not cached, attempting download (60s timeout)...")
+            if self._init_hf_embeddings_online():
+                logger.info("🤗 HuggingFace Embeddings initialized (downloaded)")
+            else:
                 logger.warning("⚠️  Falling back to keyword search")
         else:
             logger.error(f"❌ Unknown embedding model: {model}")
 
     def _load_or_build_index(self):
-        """Load existing index or build new one"""
+        """Load existing index from disk, or prepare documents for deferred build."""
         if self.index_path.exists() and self.metadata_path.exists():
             try:
                 self._load_index()
+                self._index_built = True
                 logger.info(f"📂 Loaded existing FAISS index from {self.index_path}")
             except Exception as e:
-                logger.warning(f"Failed to load index: {e}, rebuilding...")
-                self._build_index()
+                logger.warning(f"Failed to load index: {e}, will rebuild on first search")
+                self._prepare_and_defer()
         else:
-            self._build_index()
+            self._prepare_and_defer()
+
+    def _prepare_and_defer(self):
+        """Prepare documents from source; index building deferred until embeddings ready."""
+        self.documents, self.metadata = self._prepare_documents()
+        logger.info(f"📋 Prepared {len(self.documents)} documents (index build deferred)")
 
     def _prepare_documents(self) -> Tuple[List[str], List[Dict[str, Any]]]:
         """Return (doc_texts, metadata) pairs from external source or legacy DB."""
@@ -458,15 +538,19 @@ class VectorRAG:
         return docs, metas
 
     def _build_index(self):
-        """Build FAISS index from prepared documents"""
+        """Build FAISS index from prepared documents (caller must ensure embeddings are ready)."""
         self.documents, self.metadata = self._prepare_documents()
 
         if not self.documents:
             logger.warning("⚠️  No documents to index")
             return
 
-        if not FAISS_AVAILABLE or not self.embeddings:
-            logger.warning("⚠️  FAISS or embeddings not available, using fallback (metadata populated)")
+        if not FAISS_AVAILABLE:
+            logger.warning("⚠️  FAISS not available, using fallback (metadata populated)")
+            return
+
+        if not self.embeddings:
+            logger.warning("⚠️  Embeddings not available, using fallback (metadata populated)")
             return
 
         # Generate embeddings
@@ -498,39 +582,88 @@ class VectorRAG:
         with open(self.metadata_path, "rb") as f:
             self.metadata = pickle.load(f)
 
-    def search(self, query: str, top_k: int = 5) -> List[Dict[str, Any]]:
+    def search(
+        self,
+        query: str,
+        top_k: int = 5,
+        metadata_filters: Optional[Dict[str, Any]] = None,
+    ) -> List[Dict[str, Any]]:
         """
         Search for relevant API functions using vector similarity.
 
         Args:
             query: Natural language query
-            top_k: Number of results to return
+            top_k: Number of results to return (before filtering)
+            metadata_filters: Optional dict of metadata field → value to filter by.
+                Supported keys:
+                - "dlc_version": str — keep entries compatible with this version
+                - "libraries": List[str] — keep entries matching these libraries
 
         Returns:
             List of matching API references with metadata
         """
+        # Lazy-init embeddings on first search
+        self._ensure_embeddings()
+
         if not self.embeddings or not self.index:
             logger.warning("⚠️  Vector search not available, using fallback")
-            return self._fallback_search(query)
+            results = self._fallback_search(query)
+        else:
+            logger.info(f"🔍 Searching for: {query}")
 
-        logger.info(f"🔍 Searching for: {query}")
+            # Embed query
+            query_embedding = np.array([self.embeddings.embed_query(query)]).astype("float32")
 
-        # Embed query
-        query_embedding = np.array([self.embeddings.embed_query(query)]).astype("float32")
+            # Search index — fetch more candidates if we'll be filtering
+            fetch_k = top_k * 3 if metadata_filters else top_k
+            k = min(fetch_k, len(self.metadata))
+            distances, indices = self.index.search(query_embedding, k)
 
-        # Search index
-        k = min(top_k, len(self.metadata))
-        distances, indices = self.index.search(query_embedding, k)
+            results = []
+            for idx, distance in zip(indices[0], distances[0]):
+                if idx >= 0 and idx < len(self.metadata):
+                    meta = dict(self.metadata[idx])
+                    meta["score"] = float(distance)
+                    results.append(meta)
 
-        results = []
-        for idx, distance in zip(indices[0], distances[0]):
-            if idx >= 0 and idx < len(self.metadata):
-                meta = dict(self.metadata[idx])
-                meta["score"] = float(distance)
-                results.append(meta)
+        # Apply metadata filters
+        if metadata_filters:
+            results = self._apply_metadata_filters(results, metadata_filters)
+            results = results[:top_k]
 
         logger.info(f"✅ Found {len(results)} matching functions")
         return results
+
+    def _apply_metadata_filters(
+        self,
+        results: List[Dict[str, Any]],
+        filters: Dict[str, Any],
+    ) -> List[Dict[str, Any]]:
+        """Apply metadata-based filtering to search results.
+
+        Supported filters:
+        - dlc_version: str — keep entries where version is compatible
+        - libraries: List[str] — keep entries matching library requirements
+        """
+        filtered = results
+
+        dlc_version = filters.get("dlc_version")
+        if dlc_version:
+            filtered = [
+                r for r in filtered
+                if not r.get("versions") or dlc_version in r.get("versions", [])
+            ]
+
+        libraries = filters.get("libraries")
+        if libraries:
+            filtered = [
+                r for r in filtered
+                if not r.get("libraries") or any(
+                    lib in r.get("libraries", []) for lib in libraries
+                )
+            ]
+
+        return filtered
 
     def _fallback_search(self, query: str) -> List[Dict[str, Any]]:
         """Fallback keyword-based search over metadata"""

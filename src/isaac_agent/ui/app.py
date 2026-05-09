@@ -10,6 +10,7 @@ Usage:
 from __future__ import annotations
 
 import asyncio
+import os
 from typing import Any
 
 from loguru import logger
@@ -103,11 +104,16 @@ async def init_agent():
 
 def _init_agent_sync():
     global _agent, _agent_ready
-    from isaac_agent.core.agent import MainAgent  # heavy import — done in background
-    print("Initializing Isaac AI Agent (loading models + FAISS index)...", flush=True)
-    _agent = MainAgent()
-    _agent_ready = True
-    print("Agent ready.", flush=True)
+    try:
+        from isaac_agent.core.agent import MainAgent  # heavy import — done in background
+        print("Initializing Isaac AI Agent (loading models + FAISS index)...", flush=True)
+        _agent = MainAgent()
+        _agent_ready = True
+        print("Agent ready.", flush=True)
+    except Exception as e:
+        print(f"Agent init failed: {e}", flush=True)
+        import traceback
+        traceback.print_exc()
 
 
 # ---------------------------------------------------------------------------
@@ -210,6 +216,21 @@ def main_page() -> None:
                     .props("autocomplete=off")
                 )
 
+                # DLC Version and Library selectors
+                with ui.row().classes("gap-4 items-center mt-2"):
+                    dlc_select = (
+                        ui.select(
+                            options=["REP+", "REP"],
+                            value="REP+",
+                            label="DLC 版本",
+                        )
+                        .classes("w-24")
+                    )
+                    ui.label("前置库:").classes("text-sm text-gray-400")
+                    curlib_check = ui.checkbox("Curlib", value=False)
+                    rgon_check = ui.checkbox("RGON", value=False)
+                    ui.label("(文档尚未接入)").classes("text-xs text-gray-500")
+
                 # Auto-detected path status
                 _refs["path_status"] = ui.html("")
 
@@ -244,6 +265,12 @@ def main_page() -> None:
                     api_key = api_key_input.value.strip() or None
                     provider = provider_select.value
                     model = model_input.value.strip() or None
+                    dlc_version = dlc_select.value
+                    selected_libraries = []
+                    if curlib_check.value:
+                        selected_libraries.append("Curlib")
+                    if rgon_check.value:
+                        selected_libraries.append("RGON")
 
                     try:
                         result = await _agent.run(
@@ -251,6 +278,8 @@ def main_page() -> None:
                             api_key=api_key,
                             provider=provider if api_key else None,
                             model=model,
+                            dlc_version=dlc_version,
+                            libraries=selected_libraries,
                         )
                     except Exception as e:
                         ui.notify(f"生成失败: {e}", type="error")
@@ -509,11 +538,13 @@ def _build_template_tab():
 # ---------------------------------------------------------------------------
 
 def main():
+    # reload is disabled in Docker (USE_RELOAD=false) — the watchdog process
+    # breaks port binding inside containers
     ui.run(
         title="Isaac AI Agent",
         host="0.0.0.0",
         port=8080,
-        reload=True,
+        reload=os.environ.get("USE_RELOAD", "").lower() in ("1", "true", "yes"),
         show=False,
         language="zh-CN",
     )

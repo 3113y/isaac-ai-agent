@@ -79,6 +79,8 @@ install:
 
 # Build mod artifacts
 build: clean
+	@echo "📦 Pre-caching embedding model (sentence-transformers/all-MiniLM-L6-v2)..."
+	@python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')" 2>/dev/null || echo "⚠️  Model cache skipped (no network?)"
 	@echo "🔨 Building mod artifacts..."
 	python -m isaac_agent.build
 
@@ -138,7 +140,7 @@ sample:
 # Start development server (for API endpoint)
 serve:
 	@echo "🌐 Starting FastAPI server..."
-	uvicorn isaac_agent.api:app --reload --host 0.0.0.0 --port 8000
+	uv run uvicorn isaac_agent.api:app --reload --host 0.0.0.0 --port 8000
 
 # Watch mode for development
 watch:
@@ -177,6 +179,12 @@ rag-rebuild:
 rag-stats:
 	@echo "📊 RAG System Statistics:"
 	python demo_rag.py --stats-only
+
+add-version-tags:
+	@echo "🏷️  Backfilling DLC version tags into knowledge base..."
+	python scripts/add_version_tags.py
+	@echo "🔨 Rebuilding FAISS index with version metadata..."
+	python demo_rag.py --rebuild --stats-only
 
 # Multi-LLM System Commands
 llm-demo:

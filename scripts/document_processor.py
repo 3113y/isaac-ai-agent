@@ -473,39 +473,84 @@ class APIDocumentProcessor:
 
         return fixed_prefix, variable_suffix
     
+    # CSS badge class → compatible DLC versions
+    BADGE_TO_VERSIONS = {
+        "alldlc": ["AB+", "REP", "REP+"],
+        "reporplus": ["REP", "REP+"],
+        "abrep": ["AB+", "REP"],
+        "repplus": ["REP+"],
+        "rep": ["REP"],
+        "abp": ["AB+"],
+    }
+    MODIFIER_CLASSES = {"static", "const"}
+
+    @classmethod
+    def _parse_badge_line(cls, between_text: str) -> tuple:
+        """Extract DLC versions and modifiers from badge classes between ### and ####."""
+        badge_match = re.search(r"\[ ?\]\(#\)\{\: ([^}]*?) \}", between_text)
+        if not badge_match:
+            return [], []
+
+        badge_str = badge_match.group(1).strip()
+        all_known = set(cls.BADGE_TO_VERSIONS.keys()) | cls.MODIFIER_CLASSES
+
+        versions = []
+        modifiers = []
+        for token in badge_str.split():
+            token = token.strip().lstrip(".")
+            if token in cls.BADGE_TO_VERSIONS:
+                versions.extend(cls.BADGE_TO_VERSIONS[token])
+            elif token in cls.MODIFIER_CLASSES:
+                modifiers.append(token)
+
+        # Deduplicate while preserving order
+        seen = set()
+        unique_versions = []
+        for v in versions:
+            if v not in seen:
+                seen.add(v)
+                unique_versions.append(v)
+
+        return unique_versions, modifiers
+
     def extract_class_info(self, content: str, filename: str) -> dict:
-        """从文档提取类/函数信息"""
-        
+        """从文档提取类/函数信息（含 DLC 版本标签）"""
+
         # 移除 frontmatter
         content_clean = re.sub(r'^---.*?---\n', '', content, flags=re.DOTALL)
-        
+
         # 提取标题
         title_match = re.search(r'^# .*?"([^"]+)"', content_clean, re.MULTILINE)
         title = title_match.group(1) if title_match else filename.replace('.md', '')
-        
+
         # 提取所有函数/方法
         methods = []
         method_pattern = r'### ([^\n]+)\n.*?\n#### (.*?)\n(.*?)(?=^###|$)'
         matches = re.finditer(method_pattern, content_clean, re.MULTILINE | re.DOTALL)
-        
+
         for index, match in enumerate(matches, start=1):
             method_name = match.group(1).strip()
             signature = match.group(2).strip()
             description = match.group(3).strip()
-            
+
             # 清洗方法名
             method_name = re.sub(r'·', '', method_name)
             method_name = re.sub(r'\s*\(\)\s*.*', '', method_name)
             method_name = re.sub(r'\s*\{:\s*.*\}\s*$', '', method_name)
             method_name = method_name.strip()
-            
+
+            # 提取 DLC 版本标签和修饰符
+            versions, modifiers = self._parse_badge_line(match.group(0))
+
             methods.append({
                 "id": f"m{index:03d}",
                 "name": method_name,
                 "signature": signature,
                 "description": description[:500],
+                "versions": versions,
+                "modifiers": modifiers,
             })
-        
+
         return {
             "filename": filename,
             "title": title,
@@ -849,6 +894,9 @@ class APIDocumentProcessor:
                     "function": method["name"],
                     "signature": method["signature"],
                     "description": method["description"],
+                    "versions": method.get("versions", []),
+                    "modifiers": method.get("modifiers", []),
+                    "libraries": [],  # reserved for Curlib/RGON
                     "enhancement": method_enhancement,
                     "class_enhancement": class_enhancement,
                 })
