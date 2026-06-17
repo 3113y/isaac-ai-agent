@@ -1,23 +1,11 @@
 {
-  "name": "Isaac AI Agent Development",
+  "name": "Isaac AI Agent \u2014 Desktop Development",
   "image": "python:3.11-slim",
-  "forwardPorts": [8000, 8080],
-  "portsAttributes": {
-    "8000": {
-      "label": "Isaac API",
-      "onAutoForward": "notify"
-    },
-    "8080": {
-      "label": "Isaac UI",
-      "onAutoForward": "notify"
-    }
-  },
-  "otherPortsAttributes": {
-    "onAutoForward": "ignore"
-  },
+  "forwardPorts": [],
   "remoteEnv": {
     "PYTHONUNBUFFERED": "1",
-    "PYTHONPATH": "/workspace/src"
+    "PYTHONPATH": "/workspace/src",
+    "DISPLAY": "${localEnv:DISPLAY}"
   },
   "remoteUser": "root",
   "customizations": {
@@ -39,9 +27,14 @@
         "[lua]": {
           "editor.formatOnSave": true
         },
-        "Lua.diagnostics.globals": ["love"],
+        "Lua.diagnostics.globals": [
+          "love"
+        ],
         "editor.formatOnSave": true,
-        "python.formatting.provider": "black"
+        "python.formatting.provider": "black",
+        "[python]": {
+          "editor.formatOnSave": true
+        }
       }
     }
   },

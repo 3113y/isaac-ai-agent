@@ -1,3 +1,18 @@
+# =============================================================================
+# Isaac AI Agent — Document Processor (CI image)
+# =============================================================================
+# This Dockerfile is used ONLY for the document processing batch job.
+# It processes Isaac API docs into the RAG knowledge base.
+#
+# The main application is now a PyQt6 desktop app — run it natively with:
+#   make desktop-install && make desktop
+#
+# This image is still useful for:
+#   - CI/CD pipelines (GitHub Actions)
+#   - One-shot doc processing (make doc-process)
+#   - Reproducible RAG knowledge base builds
+# =============================================================================
+
 # Isaac API Document Processor
 FROM python:3.12-slim-bookworm
 WORKDIR /app

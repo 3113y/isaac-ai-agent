@@ -1,4 +1,4 @@
-.PHONY: help dev down build test lint format clean install check-lua rag-demo rag-rebuild serve check info llm-demo llm-test llm-config ui ui-install
+.PHONY: help build test lint format clean install check-lua rag-demo rag-rebuild check info llm-demo llm-test llm-config desktop desktop-install doc-process
 
 # Default target
 help:
@@ -7,9 +7,9 @@ help:
 	@echo "═══════════════════════════════════════════════════════════════"
 	@echo ""
 	@echo "🚀 MAIN COMMANDS:"
-	@echo "  make dev              Start development Docker environment"
-	@echo "  make serve            Start FastAPI server (http://localhost:8000/docs)"
-	@echo "  make install          Install dependencies"
+	@echo "  make desktop          Launch the PyQt6 desktop application"
+	@echo "  make desktop-install  Install desktop GUI dependencies"
+	@echo "  make install          Install core dependencies"
 	@echo ""
 	@echo "🔨 BUILD & TEST:"
 	@echo "  make build            Build Lua artifacts"
@@ -18,64 +18,43 @@ help:
 	@echo "  make format           Auto format code with Black"
 	@echo "  make check            Run all checks"
 	@echo ""
-	@echo "🔍 RAG SYSTEM (NEW!):"
+	@echo "🔍 RAG SYSTEM:"
 	@echo "  make rag-demo         Run RAG system demonstration"
 	@echo "  make rag-rebuild      Rebuild FAISS vector index"
 	@echo "  make rag-stats        Show RAG system statistics"
 	@echo ""
-	@echo "🤖 MULTI-LLM SYSTEM (NEW!):"
+	@echo "🤖 MULTI-LLM SYSTEM:"
 	@echo "  make llm-demo         Run multi-LLM demonstration"
 	@echo "  make llm-test         Test LLM provider configuration"
 	@echo "  make llm-config       Show current LLM configuration"
 	@echo ""
-	@echo "🖥️  DESKTOP GUI (NEW!):"
-	@echo "  make ui               Launch the PyQt6 desktop application"
-	@echo "  make ui-install       Install GUI dependencies"
-	@echo ""
-	@echo "📚 API INTEGRATION (NEW!):"
-	@echo "  make test-api         Test API integration workflow"
+	@echo "📦 DOCKER (CI/Docs):"
+	@echo "  make doc-process      Build and run document processor"
 	@echo ""
 	@echo "✅ VALIDATION:"
 	@echo "  make check-lua        Validate Lua code with luacheck"
 	@echo ""
 	@echo "🧹 CLEANUP:"
 	@echo "  make clean            Clean build artifacts"
-	@echo "  make down             Stop Docker containers"
 	@echo ""
 	@echo "📊 INFO:"
 	@echo "  make info             Show project statistics"
 	@echo ""
 
-# Development environment
-dev:
-	@echo "🚀 Starting development environment..."
-	docker-compose up -d python
-	docker-compose exec python bash
-
-dev-background:
-	@echo "🚀 Starting development environment (background)..."
-	docker-compose up -d
-
-# Docker-based UI + API
-docker-up:
-	@echo "🐳 Starting UI (8080) + API (8000)..."
-	docker-compose up -d
-	@echo "✅ UI: http://127.0.0.1:8080"
-	@echo "✅ API: http://127.0.0.1:8000/docs"
-
-docker-down:
-	@echo "🛑 Stopping all Docker services..."
-	docker-compose down
-
-# Stop containers
-down:
-	@echo "🛑 Stopping containers..."
-	docker-compose down
-
-# Install dependencies
+# Install core dependencies
 install:
 	@echo "📦 Installing dependencies..."
 	uv sync
+
+# Install desktop GUI dependencies
+desktop-install:
+	@echo "📦 Installing desktop GUI dependencies..."
+	uv sync --extra desktop
+
+# Launch the PyQt6 desktop application
+desktop:
+	@echo "🖥️  Launching Isaac AI Agent Desktop..."
+	uv run python -m isaac_agent.desktop
 
 # Build mod artifacts
 build: clean
@@ -112,11 +91,6 @@ check-lua:
 	find mods -name "*.lua" -type f | xargs luacheck --std awesome
 	@echo "✅ Lua validation complete"
 
-# Docker Lua validation
-check-lua-docker:
-	@echo "✔️  Validating Lua code with Docker..."
-	docker-compose run lua-validator
-
 # Clean build artifacts
 clean:
 	@echo "🧹 Cleaning build artifacts..."
@@ -137,21 +111,11 @@ sample:
 	@echo "📝 Generating sample mods..."
 	python -m isaac_agent.examples.generate_samples
 
-# Start development server (for API endpoint)
-serve:
-	@echo "🌐 Starting FastAPI server..."
-	uv run uvicorn isaac_agent.api:app --reload --host 0.0.0.0 --port 8000
-
-# Watch mode for development
-watch:
-	@echo "👀 Watching for changes..."
-	watchfiles "make test" src/
-
 # Full setup
-setup: clean install build
+setup: clean install desktop-install
 	@echo ""
 	@echo "✅ Full setup complete!"
-	@echo "Run 'make dev' to start development environment"
+	@echo "Run 'make desktop' to launch the application"
 
 # Show project info
 info:
@@ -162,9 +126,6 @@ info:
 	@echo ""
 	@echo "  Lines of Python code:"
 	find src/ -name "*.py" -exec wc -l {} + | tail -1
-	@echo ""
-	@echo "  Lua templates:"
-	grep -c "\".*\":" src/isaac_agent/templates/lua_skeletons.py || echo "0"
 	@echo ""
 
 # RAG System Commands
@@ -199,18 +160,12 @@ llm-test:
 	@echo "🧪 Testing LLM Providers..."
 	python -m pytest tests/test_llm_factory.py -v
 
-# API Integration Commands
-test-api:
-	@echo "📚 Testing API Integration Workflow..."
-	python test_api_integration.py
-
-ui:
-	@echo "🖥️  Launching Isaac AI Agent GUI..."
-	uv run python -m isaac_agent.ui.app
-
-ui-install:
-	@echo "📦 Installing GUI dependencies..."
-	uv sync --extra gui
+# Docker — document processor (CI / one-shot batch job)
+doc-process:
+	@echo "📄 Building document processor Docker image..."
+	docker build -t isaac-doc-processor .
+	@echo "▶️  Running document processor..."
+	docker run --rm -v $(PWD)/processed_docs:/app/processed_docs isaac-doc-processor
 
 convert-api:
 	@echo "🔄 Converting API documentation..."
