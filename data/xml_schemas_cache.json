@@ -1,0 +1,2602 @@
+[
+  {
+    "filename": "achievements.xml",
+    "root_element": "achievements",
+    "root_attributes": {},
+    "folder": "content",
+    "attributes": [
+      {
+        "name": "id",
+        "type": "int",
+        "possible_values": [],
+        "description": "Ingame-Id of the Achievement",
+        "required": true
+      },
+      {
+        "name": "text",
+        "type": "string",
+        "possible_values": [],
+        "description": "Description",
+        "required": false
+      },
+      {
+        "name": "gfx",
+        "type": "string",
+        "possible_values": [],
+        "description": ".png file path based on the \"gfxroot\" attribute of the \"achievements\" xml root.",
+        "required": false
+      },
+      {
+        "name": "steam_name",
+        "type": "string",
+        "possible_values": [],
+        "description": "Name of achievement on Steam",
+        "required": false
+      },
+      {
+        "name": "steam_description",
+        "type": "string",
+        "possible_values": [],
+        "description": "Description (not used)",
+        "required": false
+      }
+    ],
+    "sub_elements": [],
+    "tags": [],
+    "xml_examples": [],
+    "description": "This file is used to store general informations about the ingame achievements."
+  },
+  {
+    "filename": "ambush.xml",
+    "root_element": "ambush",
+    "root_attributes": {},
+    "folder": "content",
+    "attributes": [
+      {
+        "name": "type",
+        "type": "int",
+        "possible_values": [],
+        "description": "The type of the entity to spawn",
+        "required": false
+      },
+      {
+        "name": "variant",
+        "type": "int",
+        "possible_values": [],
+        "description": "The variant of the entity",
+        "required": true
+      },
+      {
+        "name": "count",
+        "type": "int",
+        "possible_values": [],
+        "description": "How many of the entity should spawn at the beginning of the wave",
+        "required": false
+      },
+      {
+        "name": "chunks",
+        "type": "int",
+        "possible_values": [],
+        "description": "The amount of segments a multi-entity NPC (i.e, Larry Jr.) should spawn with",
+        "required": false
+      }
+    ],
+    "sub_elements": [],
+    "tags": [],
+    "xml_examples": [],
+    "description": "This file is used to store spawning patterns for the wave system of Ambush rooms and Boss Rush."
+  },
+  {
+    "filename": "babies.xml",
+    "root_element": "babies",
+    "root_attributes": {},
+    "folder": "resources",
+    "attributes": [
+      {
+        "name": "id",
+        "type": "int",
+        "possible_values": [],
+        "description": "Identifier of the Baby",
+        "required": true
+      },
+      {
+        "name": "name",
+        "type": "string",
+        "possible_values": [],
+        "description": "Name of the Baby",
+        "required": true
+      },
+      {
+        "name": "skin",
+        "type": "string",
+        "possible_values": [],
+        "description": "Filepath to the .png file used by the baby",
+        "required": false
+      },
+      {
+        "name": "achievement",
+        "type": "int",
+        "possible_values": [],
+        "description": "Achievement id needed to unlock this Baby",
+        "required": false
+      }
+    ],
+    "sub_elements": [],
+    "tags": [],
+    "xml_examples": [],
+    "description": "This file is used to store informations about coop-babies. Placing this file in a resource folder of a mod and removing entries causes crashes."
+  },
+  {
+    "filename": "backdrops.xml",
+    "root_element": "backdrops",
+    "root_attributes": {},
+    "folder": "content",
+    "attributes": [
+      {
+        "name": "id",
+        "type": "int",
+        "possible_values": [],
+        "description": "ID of the stage",
+        "required": true
+      },
+      {
+        "name": "gfx",
+        "type": "string",
+        "possible_values": [],
+        "description": ".png filename of the main backdrop file",
+        "required": false
+      },
+      {
+        "name": "walls",
+        "type": "int",
+        "possible_values": [],
+        "description": "Number of wall sprites in the backdrop file",
+        "required": false
+      },
+      {
+        "name": "wallvariants",
+        "type": "int",
+        "possible_values": [],
+        "description": "Number of wall tiles per wall sprite",
+        "required": false
+      },
+      {
+        "name": "floors",
+        "type": "int",
+        "possible_values": [],
+        "description": "Number of floor sprites in the backdrop file",
+        "required": false
+      },
+      {
+        "name": "floorvariants",
+        "type": "int",
+        "possible_values": [],
+        "description": "Number of floor variants",
+        "required": false
+      },
+      {
+        "name": "lfloorgfx",
+        "type": "string",
+        "possible_values": [],
+        "description": ".png filename for special L-shape floor sprites",
+        "required": false
+      },
+      {
+        "name": "nfloorgfx",
+        "type": "string",
+        "possible_values": [],
+        "description": ".png filename for special long or narrow floor sprites",
+        "required": false
+      },
+      {
+        "name": "props",
+        "type": "string",
+        "possible_values": [],
+        "description": "Anm2 filename for props used in this stage",
+        "required": false
+      },
+      {
+        "name": "rocks",
+        "type": "string",
+        "possible_values": [],
+        "description": ".png filename for rock sprites used on that stage",
+        "required": false
+      },
+      {
+        "name": "pit",
+        "type": "string",
+        "possible_values": [],
+        "description": ".png filename for pit sprites used on that stage",
+        "required": false
+      },
+      {
+        "name": "bridge",
+        "type": "string",
+        "possible_values": [],
+        "description": ".png filename for pit sprites used on that stage",
+        "required": false
+      },
+      {
+        "name": "door",
+        "type": "string",
+        "possible_values": [],
+        "description": ".png filename for door sprites used on that stage",
+        "required": false
+      },
+      {
+        "name": "holeinwall",
+        "type": "string",
+        "possible_values": [],
+        "description": ".png filename for hole-in-wall sprites used on that stage",
+        "required": false
+      },
+      {
+        "name": "watergfx",
+        "type": "string",
+        "possible_values": [],
+        "description": ".png filename for the water sprites used on that stage",
+        "required": false
+      },
+      {
+        "name": "waterpit",
+        "type": "string",
+        "possible_values": [],
+        "description": ".png filename for water-holding pits used on that stage",
+        "required": false
+      },
+      {
+        "name": "spikes",
+        "type": "string",
+        "possible_values": [],
+        "description": ".png filename for spike sprites used on that stage",
+        "required": false
+      },
+      {
+        "name": "reversewatergfx",
+        "type": "bool",
+        "possible_values": [],
+        "description": "Should the water gfx animation be reversed on that stage",
+        "required": false
+      }
+    ],
+    "sub_elements": [],
+    "tags": [],
+    "xml_examples": [],
+    "description": "This file is used to store informations about the backdrops and sprites used in the stages."
+  },
+  {
+    "filename": "bombcostumes.xml",
+    "root_element": "bombcostumes",
+    "root_attributes": {
+      "anm2root": "gfx/items/pick ups/bombs/"
+    },
+    "folder": "content",
+    "attributes": [
+      {
+        "name": "variant",
+        "type": "int",
+        "possible_values": [],
+        "description": "[BombVariant](../enums/BombVariant.md) for which the costumes should be applied",
+        "required": true
+      }
+    ],
+    "sub_elements": [],
+    "tags": [],
+    "xml_examples": [
+      "<bombcostumes anm2root=\"gfx/items/pick ups/bombs/\">\n    <bomb variant=\"0\"> <!-- Normal bomb -->\n        <!-- TearFlag 31 == TearFlags.TEAR_GLOW -->\n        <rule includeFlags=\"31\" body=\"glow.anm2\" />\n    </bomb>\n</bombcostumes>"
+    ],
+    "description": "Used to apply costumes to bomb relative to their TearFlags."
+  },
+  {
+    "filename": "bosscolors.xml",
+    "root_element": "bosscolors",
+    "root_attributes": {},
+    "folder": "unknown",
+    "attributes": [
+      {
+        "name": "id",
+        "type": "int",
+        "possible_values": [],
+        "description": "Ingame-Id of the Boss.",
+        "required": true
+      },
+      {
+        "name": "variant",
+        "type": "int",
+        "possible_values": [],
+        "description": "Ingame-Variant of the Boss.",
+        "required": true
+      }
+    ],
+    "sub_elements": [],
+    "tags": [],
+    "xml_examples": [],
+    "description": "This file is used to store all valid champion bosses. Effects of champion bosses are hardcoded, so this file defines only color, scale and HP multiplier of the boss."
+  },
+  {
+    "filename": "bossoverlays.xml",
+    "root_element": "bossoverlays",
+    "root_attributes": {},
+    "folder": "unknown",
+    "attributes": [
+      {
+        "name": "id",
+        "type": "int",
+        "possible_values": [],
+        "description": "",
+        "required": true
+      },
+      {
+        "name": "anm2",
+        "type": "string",
+        "possible_values": [],
+        "description": "Path to the .anm2 file to be used",
+        "required": false
+      },
+      {
+        "name": "anim",
+        "type": "string",
+        "possible_values": [],
+        "description": "Name of the animation to be played",
+        "required": false
+      },
+      {
+        "name": "persist",
+        "type": "bool",
+        "possible_values": [],
+        "description": "",
+        "required": false
+      }
+    ],
+    "sub_elements": [],
+    "tags": [],
+    "xml_examples": [],
+    "description": "This page needs some content. You can contribute to it using the Edit Button!"
+  },
+  {
+    "filename": "bosspools.xml",
+    "root_element": "bosspools",
+    "root_attributes": {},
+    "folder": "unknown",
+    "attributes": [
+      {
+        "name": "name",
+        "type": "string",
+        "possible_values": [],
+        "description": "Name of the bosspool",
+        "required": true
+      },
+      {
+        "name": "doubletrouble",
+        "type": "int",
+        "possible_values": [],
+        "description": "Room id used for double trouble rooms",
+        "required": false
+      }
+    ],
+    "sub_elements": [],
+    "tags": [],
+    "xml_examples": [],
+    "description": "This file is used to store informations about the bosses able to spawn on a given stage."
+  },
+  {
+    "filename": "bossportraits.xml",
+    "root_element": "bosses",
+    "root_attributes": {
+      "root": "gfx/ui/boss/",
+      "anm2": "versusscreen.anm2"
+    },
+    "folder": "unknown",
+    "attributes": [
+      {
+        "name": "id",
+        "type": "int",
+        "possible_values": [],
+        "description": "Id of the boss",
+        "required": true
+      },
+      {
+        "name": "name",
+        "type": "string",
+        "possible_values": [],
+        "description": "Name of the boss",
+        "required": true
+      },
+      {
+        "name": "nameimage",
+        "type": "string",
+        "possible_values": [],
+        "description": ".png filename of the name plate sprite of the boss",
+        "required": false
+      },
+      {
+        "name": "portrait",
+        "type": "string",
+        "possible_values": [],
+        "description": ".png filename of the boss sprite",
+        "required": false
+      },
+      {
+        "name": "pivotX",
+        "type": "int",
+        "possible_values": [],
+        "description": "Pivot X position where the boss sprite should be placed",
+        "required": false
+      },
+      {
+        "name": "pivotY",
+        "type": "int",
+        "possible_values": [],
+        "description": "Pivot Y position where the boss sprite should be placed",
+        "required": false
+      },
+      {
+        "name": "achievement",
+        "type": "int",
+        "possible_values": [],
+        "description": "Achievement id. Usage unknown",
+        "required": false
+      }
+    ],
+    "sub_elements": [],
+    "tags": [],
+    "xml_examples": [
+      "<bosses root=\"gfx/ui/boss/\" anm2=\"versusscreen.anm2\">\n\t<boss id=\"76\" name=\"Wormwood\" nameimage=\"BossName_Wormwood.png\" portrait=\"Portrait_902.0_Wormwood.png\" pivotX=\"84\" pivotY=\"144\">\n\t\t<alt stage=\"28\" portrait=\"Portrait_902.0_Wormwood_Dross.png\" />\n\t</boss>\n</bosses>"
+    ],
+    "description": "This file is used to store informations about the VS screen sprites of bosses."
+  },
+  {
+    "filename": "challenges.xml",
+    "root_element": "challenges",
+    "root_attributes": {
+      "version": "1"
+    },
+    "folder": "content",
+    "attributes": [
+      {
+        "name": "id",
+        "type": "int",
+        "possible_values": [],
+        "description": "Ingame-Id of the Challenge (Not needed for Content Folder)",
+        "required": true
+      },
+      {
+        "name": "name",
+        "type": "string",
+        "possible_values": [],
+        "description": "Name of the Challenge",
+        "required": true
+      },
+      {
+        "name": "startingitems",
+        "type": "string",
+        "possible_values": [],
+        "description": "Comma separated (nospace) item ids that will be added at the start.",
+        "required": false
+      },
+      {
+        "name": "startingitems2",
+        "type": "string",
+        "possible_values": [],
+        "description": "Starting items for Player 2. Comma separated (nospace) item ids that will be added at the start. [ ](#)",
+        "required": false
+      },
+      {
+        "name": "startingtrinkets",
+        "type": "string",
+        "possible_values": [],
+        "description": "Comma separated (nospace) trinket ids that will be added at the start (max 2)",
+        "required": false
+      },
+      {
+        "name": "startingcard",
+        "type": "string",
+        "possible_values": [],
+        "description": "[Card id](../enums/Card.md) of the starting cardsDefault: -1 (no card)",
+        "required": false
+      },
+      {
+        "name": "startingpill",
+        "type": "string",
+        "possible_values": [],
+        "description": "[PillEffect id](../enums/PillEffect.md) of the starting pillDefault: -1 (no pill)",
+        "required": false
+      },
+      {
+        "name": "playertype",
+        "type": "string",
+        "possible_values": [],
+        "description": "Player type id. Custom characters cant be defined this way! Use LUA code instead.Default: 0 (Isaac)",
+        "required": false
+      },
+      {
+        "name": "endstage",
+        "type": "string",
+        "possible_values": [],
+        "description": "The last stage of the challenge (use [LevelStage](../enums/LevelStage.md) internal ids)",
+        "required": false
+      },
+      {
+        "name": "roomfilter",
+        "type": "string",
+        "possible_values": [],
+        "description": "List of [RoomTypes](../enums/RoomType.md) to not be generated in challenge [Not all room ids can be used]",
+        "required": false
+      },
+      {
+        "name": "cursefilter",
+        "type": "int",
+        "possible_values": [],
+        "description": "Bitmask for [curses](../enums/LevelCurse.md) to be removed.(Darkness = 1, Labyrinth = 2, Lost = 4, Unknown = 8, Cursed = 16, Maze = 32, Blind = 64, Giant = 128)",
+        "required": false
+      },
+      {
+        "name": "getcurse",
+        "type": "int",
+        "possible_values": [],
+        "description": "Bitmask for [curses](../enums/LevelCurse.md) to be forced (Same id's as curse filter)",
+        "required": false
+      },
+      {
+        "name": "achievements",
+        "type": "string",
+        "possible_values": [],
+        "description": "List of achievement ids that are required to be able to play the challenge",
+        "required": false
+      },
+      {
+        "name": "altpath",
+        "type": "bool",
+        "possible_values": [],
+        "description": "Alternative floor for light/dark path (isaac/satan)",
+        "required": false
+      },
+      {
+        "name": "canshoot",
+        "type": "bool",
+        "possible_values": [],
+        "description": "Determines if player can shootDefault: true (shooting enabled)",
+        "required": false
+      },
+      {
+        "name": "redhp",
+        "type": "int",
+        "possible_values": [],
+        "description": "Add red hp to the base of the choosen character. 2 = 1 Heart. Negative numbers possible",
+        "required": false
+      },
+      {
+        "name": "maxhp",
+        "type": "int",
+        "possible_values": [],
+        "description": "Add red hp containers to the base of the choosen character. 2 = 1 Heartcontainer. Negative numbers possible",
+        "required": false
+      },
+      {
+        "name": "soulhp",
+        "type": "int",
+        "possible_values": [],
+        "description": "Add soul hp containers to the base of the choosen character. 2 = 1 Heartcontainer",
+        "required": false
+      },
+      {
+        "name": "blackhp",
+        "type": "int",
+        "possible_values": [],
+        "description": "Add black hp containers to the base of the choosen character. 2 = 1 Heartcontainer",
+        "required": false
+      },
+      {
+        "name": "coins",
+        "type": "int",
+        "possible_values": [],
+        "description": "Add starting coins",
+        "required": false
+      },
+      {
+        "name": "maxdamage",
+        "type": "bool",
+        "possible_values": [],
+        "description": "Max. damage actived (clamps at min 100) or deactivated",
+        "required": false
+      },
+      {
+        "name": "adddamage",
+        "type": "float",
+        "possible_values": [],
+        "description": "+ Damage up",
+        "required": false
+      },
+      {
+        "name": "minfirerate",
+        "type": "float",
+        "possible_values": [],
+        "description": "Minimal fire rate or more",
+        "required": false
+      },
+      {
+        "name": "minshotspeed",
+        "type": "bool",
+        "possible_values": [],
+        "description": "Minimal shot speed actived or deactivated",
+        "required": false
+      },
+      {
+        "name": "bigrange",
+        "type": "bool",
+        "possible_values": [],
+        "description": "Enable high starting range value",
+        "required": false
+      },
+      {
+        "name": "difficulty",
+        "type": "int",
+        "possible_values": [],
+        "description": "[Game difficulty](../enums/Difficulty.md) [0: normal(default), 1: hard, 2: Greed, 3: Greedier)Greed and greedier mode work, but when killing Ultra Greed, the big Chest spawns, instead of a trophy",
+        "required": false
+      },
+      {
+        "name": "megasatan",
+        "type": "bool",
+        "possible_values": [],
+        "description": "Last boss is megasatan. Adds the Key to the player.",
+        "required": false
+      },
+      {
+        "name": "secretpath",
+        "type": "bool",
+        "possible_values": [],
+        "description": "Force the Repentance alt path [ ](#)",
+        "required": false
+      }
+    ],
+    "sub_elements": [],
+    "tags": [],
+    "xml_examples": [
+      "<challenges version=\"1\">\n\t<challenge playertype=\"0\" name=\"My new challenge\" endstage=\"8\" startingitems=\"25,81,100\" roomfilter=\"1\" cursefilter=\"1\" canshoot=\"false\" />\n</challenges>"
+    ],
+    "description": "Used to store all challenges and some of their attributes."
+  },
+  {
+    "filename": "costumes2.xml",
+    "root_element": "costumes",
+    "root_attributes": {},
+    "folder": "content",
+    "attributes": [
+      {
+        "name": "id",
+        "type": "int",
+        "possible_values": [],
+        "description": "Ingame-Id of the Costume. Will be overridden by the game when file is in content folder.",
+        "required": true
+      },
+      {
+        "name": "anm2path",
+        "type": "string",
+        "possible_values": [],
+        "description": "Path to the .anm2 file",
+        "required": false
+      },
+      {
+        "name": "type",
+        "type": "string",
+        "possible_values": [],
+        "description": "Type of the costume. Available: [none, passive, active, familiar, trinket]",
+        "required": false
+      },
+      {
+        "name": "priority",
+        "type": "int",
+        "possible_values": [],
+        "description": "Priority of the costume. higher number means higher priority",
+        "required": false
+      },
+      {
+        "name": "overwriteColor",
+        "type": "bool",
+        "possible_values": [],
+        "description": "Define if a costume overrides the body color of the character (default: false)",
+        "required": false
+      },
+      {
+        "name": "isFlying",
+        "type": "bool",
+        "possible_values": [],
+        "description": "Define if a costume displays a flying character (default: false)",
+        "required": false
+      },
+      {
+        "name": "skinColor",
+        "type": "int",
+        "possible_values": [],
+        "description": "Define what skincolor that costume has. (default: 0)",
+        "required": false
+      },
+      {
+        "name": "hasSkinAlt",
+        "type": "bool",
+        "possible_values": [],
+        "description": "Define if a costume has alternative versions for all other the skin colors (default: false)",
+        "required": false
+      },
+      {
+        "name": "hasOverlay",
+        "type": "bool",
+        "possible_values": [],
+        "description": "Define if a costume has an overlayeffect (default: false)",
+        "required": false
+      },
+      {
+        "name": "forceBodyColor",
+        "type": "bool",
+        "possible_values": [],
+        "description": "Forces the body color (default: false) [ ](#)",
+        "required": false
+      },
+      {
+        "name": "forceHeadColor",
+        "type": "bool",
+        "possible_values": [],
+        "description": "Forces the head color (default: false) [ ](#)",
+        "required": false
+      }
+    ],
+    "sub_elements": [],
+    "tags": [],
+    "xml_examples": [],
+    "description": "Defines Costume informations."
+  },
+  {
+    "filename": "curses.xml",
+    "root_element": "curses",
+    "root_attributes": {},
+    "folder": "content",
+    "attributes": [
+      {
+        "name": "id",
+        "type": "int",
+        "possible_values": [],
+        "description": "Ingame-Id of the Curse. Will be overridden by the game when file is in content folder.",
+        "required": true
+      }
+    ],
+    "sub_elements": [],
+    "tags": [],
+    "xml_examples": [],
+    "description": "Stores the names and ids of the available curses."
+  },
+  {
+    "filename": "cutscenes.xml",
+    "root_element": "cutscenes",
+    "root_attributes": {},
+    "folder": "unknown",
+    "attributes": [
+      {
+        "name": "id",
+        "type": "int",
+        "possible_values": [],
+        "description": "The ID of the cutscene",
+        "required": true
+      },
+      {
+        "name": "name",
+        "type": "string",
+        "possible_values": [],
+        "description": "The name of the cutscene",
+        "required": true
+      },
+      {
+        "name": "fadeout",
+        "type": "bool",
+        "possible_values": [],
+        "description": "Whether or not the cutscene should fadeout",
+        "required": false
+      },
+      {
+        "name": "fadecolor",
+        "type": "string",
+        "possible_values": [],
+        "description": "The color the fadeout should be in if enabled",
+        "required": false
+      }
+    ],
+    "sub_elements": [],
+    "tags": [],
+    "xml_examples": [],
+    "description": "This file stores and defines the intro cutscene and the various ending cutscenes in the game."
+  },
+  {
+    "filename": "entities2.xml",
+    "root_element": "entities",
+    "root_attributes": {},
+    "folder": "content",
+    "attributes": [
+      {
+        "name": "name",
+        "type": "string",
+        "possible_values": [],
+        "description": "",
+        "required": true
+      },
+      {
+        "name": "id",
+        "type": "int",
+        "possible_values": [],
+        "description": "Type of the entity. Max Value: 4095",
+        "required": true
+      },
+      {
+        "name": "variant",
+        "type": "int",
+        "possible_values": [],
+        "description": "Variant of the entity. The maximum value is 4095. If you leave this blank, then the game will automatically chose the next available number.",
+        "required": true
+      },
+      {
+        "name": "subtype",
+        "type": "int",
+        "possible_values": [],
+        "description": "SubType of the entity. The maximum value is 255. (The reason for this is that the hash map generator of the .stb format expects a specific bit-depth.)",
+        "required": false
+      },
+      {
+        "name": "anm2path",
+        "type": "string",
+        "possible_values": [],
+        "description": "path to the anm2 file, relative to the given anm2root. Example: `001.000_Player.anm2`",
+        "required": false
+      },
+      {
+        "name": "baseHP",
+        "type": "int",
+        "possible_values": [],
+        "description": "",
+        "required": false
+      },
+      {
+        "name": "boss",
+        "type": "int",
+        "possible_values": [
+          "0",
+          "1"
+        ],
+        "description": "Entity is a boss. Possible values: ['0', '1']",
+        "required": false
+      },
+      {
+        "name": "bossID",
+        "type": "int",
+        "possible_values": [],
+        "description": "",
+        "required": false
+      },
+      {
+        "name": "champion",
+        "type": "int",
+        "possible_values": [
+          "0",
+          "1"
+        ],
+        "description": "Allow champion variants of this entity. Possible values: ['0', '1']",
+        "required": false
+      },
+      {
+        "name": "collisionDamage",
+        "type": "float",
+        "possible_values": [],
+        "description": "",
+        "required": false
+      },
+      {
+        "name": "collisionMass",
+        "type": "float",
+        "possible_values": [],
+        "description": "",
+        "required": false
+      },
+      {
+        "name": "collisionRadius",
+        "type": "float",
+        "possible_values": [],
+        "description": "Radius of the collision circle. This value is used for both entity  entity and entity  grid collisions. This changes the `Entity.Size` field.",
+        "required": false
+      },
+      {
+        "name": "collisionRadiusXMulti",
+        "type": "float",
+        "possible_values": [],
+        "description": "Multiplier for the X direction of the collision circle. This can be used to grant an entity an elliptical hitbox",
+        "required": false
+      },
+      {
+        "name": "collisionRadiusYMulti",
+        "type": "float",
+        "possible_values": [],
+        "description": "Multiplier for the Y direction of the collision circle. This can be used to grant an entity an elliptical hitbox",
+        "required": false
+      },
+      {
+        "name": "collisionInterval",
+        "type": "int",
+        "possible_values": [],
+        "description": "Number of game ticks till the next collision should be evaluated. Default = 1",
+        "required": false
+      },
+      {
+        "name": "numGridCollisionPoints",
+        "type": "int",
+        "possible_values": [],
+        "description": "Number of points along the edge of the collision circle, which are used to detect collisions with grid entities.",
+        "required": false
+      },
+      {
+        "name": "friction",
+        "type": "float",
+        "possible_values": [],
+        "description": "\"Slippyness\" of the entity. Default = 1. Lower values make them slide more, similar as they would standing on ice. Higher values make them slide less. A value of 0 makes them unable to move.",
+        "required": false
+      },
+      {
+        "name": "shadowSize",
+        "type": "float",
+        "possible_values": [],
+        "description": "",
+        "required": false
+      },
+      {
+        "name": "stageHP",
+        "type": "int",
+        "possible_values": [],
+        "description": "",
+        "required": false
+      },
+      {
+        "name": "tags",
+        "type": "string",
+        "possible_values": [
+          "nodelirium",
+          "spider",
+          "explosive_soul",
+          "cansacrifice",
+          "ghost",
+          "brimstone_soul",
+          "homing_soul",
+          "fly",
+          "noreroll"
+        ],
+        "description": "possible values: ['nodelirium', 'spider', 'explosive_soul', 'cansacrifice', 'ghost', 'brimstone_soul', 'homing_soul', 'fly', 'noreroll']See Chapter below for in depth explanations of the tags.",
+        "required": false
+      },
+      {
+        "name": "gridCollision",
+        "type": "string",
+        "possible_values": [
+          "nopits",
+          "ground",
+          "none",
+          "walls",
+          "floor"
+        ],
+        "description": "possible values: ['nopits', 'ground', 'none', 'walls', 'floor']",
+        "required": false
+      },
+      {
+        "name": "portrait",
+        "type": "int",
+        "possible_values": [],
+        "description": "",
+        "required": false
+      },
+      {
+        "name": "hasFloorAlts",
+        "type": "bool",
+        "possible_values": [],
+        "description": "If set to true, floor specific sprites should be used for this entity if they exist. See the chapter below for more informations",
+        "required": false
+      },
+      {
+        "name": "reroll",
+        "type": "bool",
+        "possible_values": [],
+        "description": "",
+        "required": false
+      },
+      {
+        "name": "shutdoors",
+        "type": "bool",
+        "possible_values": [],
+        "description": "",
+        "required": false
+      },
+      {
+        "name": "shieldStrength",
+        "type": "int",
+        "possible_values": [],
+        "description": "",
+        "required": false
+      },
+      {
+        "name": "gibAmount",
+        "type": "int",
+        "possible_values": [],
+        "description": "",
+        "required": false
+      },
+      {
+        "name": "gibFlags",
+        "type": "string",
+        "possible_values": [],
+        "description": "used Values: ['poop']",
+        "required": false
+      },
+      {
+        "name": "bestiaryAnim",
+        "type": "string",
+        "possible_values": [],
+        "description": "",
+        "required": false
+      },
+      {
+        "name": "bestiaryOverlay",
+        "type": "string",
+        "possible_values": [],
+        "description": "",
+        "required": false
+      }
+    ],
+    "sub_elements": [
+      {
+        "name": "gibs",
+        "description": "",
+        "attributes": [
+          {
+            "name": "amount",
+            "type": "int",
+            "possible_values": [],
+            "description": "How many gibs should be spawned",
+            "required": false
+          },
+          {
+            "name": "blood",
+            "type": "int",
+            "possible_values": [
+              "0",
+              "1"
+            ],
+            "description": "Possible values: [0,1] where 0 is off and 1 is on",
+            "required": false
+          },
+          {
+            "name": "bone",
+            "type": "int",
+            "possible_values": [
+              "0",
+              "1"
+            ],
+            "description": "Possible values: [0,1] where 0 is off and 1 is on",
+            "required": false
+          },
+          {
+            "name": "chain",
+            "type": "int",
+            "possible_values": [
+              "0",
+              "1"
+            ],
+            "description": "Possible values: [0,1] where 0 is off and 1 is on",
+            "required": false
+          },
+          {
+            "name": "colorblood",
+            "type": "int",
+            "possible_values": [
+              "0",
+              "1"
+            ],
+            "description": "Possible values: [0,1] where 0 is off and 1 is on",
+            "required": false
+          },
+          {
+            "name": "dust",
+            "type": "int",
+            "possible_values": [
+              "0",
+              "1"
+            ],
+            "description": "Possible values: [0,1] where 0 is off and 1 is on",
+            "required": false
+          },
+          {
+            "name": "eye",
+            "type": "int",
+            "possible_values": [
+              "0",
+              "1"
+            ],
+            "description": "Possible values: [0,1] where 0 is off and 1 is on",
+            "required": false
+          },
+          {
+            "name": "gut",
+            "type": "int",
+            "possible_values": [
+              "0",
+              "1"
+            ],
+            "description": "Possible values: [0,1] where 0 is off and 1 is on",
+            "required": false
+          },
+          {
+            "name": "huge",
+            "type": "int",
+            "possible_values": [
+              "0",
+              "1"
+            ],
+            "description": "Possible values: [0,1] where 0 is off and 1 is on",
+            "required": false
+          },
+          {
+            "name": "large",
+            "type": "int",
+            "possible_values": [
+              "0",
+              "1"
+            ],
+            "description": "Possible values: [0,1] where 0 is off and 1 is on",
+            "required": false
+          },
+          {
+            "name": "poop",
+            "type": "int",
+            "possible_values": [
+              "0",
+              "1"
+            ],
+            "description": "Possible values: [0,1] where 0 is off and 1 is on",
+            "required": false
+          },
+          {
+            "name": "rock",
+            "type": "int",
+            "possible_values": [
+              "0",
+              "1"
+            ],
+            "description": "Possible values: [0,1] where 0 is off and 1 is on",
+            "required": false
+          },
+          {
+            "name": "rock_small",
+            "type": "int",
+            "possible_values": [
+              "0",
+              "1"
+            ],
+            "description": "Possible values: [0,1] where 0 is off and 1 is on",
+            "required": false
+          },
+          {
+            "name": "small",
+            "type": "int",
+            "possible_values": [
+              "0",
+              "1"
+            ],
+            "description": "Possible values: [0,1] where 0 is off and 1 is on",
+            "required": false
+          },
+          {
+            "name": "sound_baby",
+            "type": "int",
+            "possible_values": [
+              "0",
+              "1"
+            ],
+            "description": "Possible values: [0,1] where 0 is off and 1 is on",
+            "required": false
+          },
+          {
+            "name": "sound_bone",
+            "type": "int",
+            "possible_values": [
+              "0",
+              "1"
+            ],
+            "description": "Possible values: [0,1] where 0 is off and 1 is on",
+            "required": false
+          },
+          {
+            "name": "worm",
+            "type": "int",
+            "possible_values": [
+              "0",
+              "1"
+            ],
+            "description": "Possible values: [0,1] where 0 is off and 1 is on",
+            "required": false
+          }
+        ]
+      }
+    ],
+    "tags": [],
+    "xml_examples": [],
+    "description": "This page needs some content. You can contribute to it using the Edit Button!"
+  },
+  {
+    "filename": "fortunes.txt",
+    "root_element": "fortunes.txt",
+    "root_attributes": {},
+    "folder": "resources",
+    "attributes": [],
+    "sub_elements": [],
+    "tags": [],
+    "xml_examples": [],
+    "description": "This file is used to store all \"fortunes\" displayed when using the \"Fortune Machine\" or similar. Fortunes-entries can have up to 3 rows and should be seperated with an empty line."
+  },
+  {
+    "filename": "fxlayers.xml",
+    "root_element": "fxlayers",
+    "root_attributes": {},
+    "folder": "resources",
+    "attributes": [
+      {
+        "name": "id",
+        "type": "string",
+        "possible_values": [],
+        "description": "",
+        "required": true
+      },
+      {
+        "name": "path",
+        "type": "string",
+        "possible_values": [],
+        "description": "Path to the overlay image. Must be a .png saved at a bit-depth of 32 bits.",
+        "required": false
+      },
+      {
+        "name": "numLayers",
+        "type": "int",
+        "possible_values": [],
+        "description": "*todo*",
+        "required": false
+      },
+      {
+        "name": "xMin",
+        "type": "float",
+        "possible_values": [],
+        "description": "",
+        "required": false
+      },
+      {
+        "name": "xMax",
+        "type": "float",
+        "possible_values": [],
+        "description": "",
+        "required": false
+      },
+      {
+        "name": "yMin",
+        "type": "float",
+        "possible_values": [],
+        "description": "",
+        "required": false
+      },
+      {
+        "name": "yMax",
+        "type": "float",
+        "possible_values": [],
+        "description": "",
+        "required": false
+      },
+      {
+        "name": "layer",
+        "type": "string",
+        "possible_values": [
+          "lighting",
+          "foreground",
+          "background",
+          "behind"
+        ],
+        "description": "Possible values: [lighting, foreground, background, behind]",
+        "required": false
+      },
+      {
+        "name": "stage",
+        "type": "int",
+        "possible_values": [
+          "1-Basement",
+          "2-Caves",
+          "3-Depths",
+          "4-Womb",
+          "5-Blue Womb",
+          "6-Sheol",
+          "7-Chest",
+          "8-Void",
+          "9-Home"
+        ],
+        "description": "Possible values: [1-Basement, 2-Caves, 3-Depths, 4-Womb, 5-Blue Womb, 6-Sheol, 7-Chest, 8-Void, 9-Home]",
+        "required": false
+      },
+      {
+        "name": "altStages",
+        "type": "int",
+        "possible_values": [],
+        "description": "Bitmask of 1 << [0-Original, 1-WOTL, 2-Afterbirth, 3-Unused (legacy Greed Mode), 4-Repentance, 5-Repentance Alt, 6-Special (only used for the Abandoned Mineshaft)]",
+        "required": false
+      },
+      {
+        "name": "parallax",
+        "type": "float",
+        "possible_values": [],
+        "description": "Moves the overlay in the opposite direction as the player",
+        "required": false
+      },
+      {
+        "name": "onlyDefaultBackdrop",
+        "type": "bool",
+        "possible_values": [],
+        "description": "*todo*",
+        "required": false
+      },
+      {
+        "name": "blendMode",
+        "type": "int",
+        "possible_values": [],
+        "description": "*todo*",
+        "required": false
+      },
+      {
+        "name": "useBGShader",
+        "type": "bool",
+        "possible_values": [],
+        "description": "*todo*",
+        "required": false
+      }
+    ],
+    "sub_elements": [],
+    "tags": [],
+    "xml_examples": [],
+    "description": "Used to store information about overlays used in the stages. Unlike other Isaac XMLs, the file does not have one overarching element containing everything inside, instead being seperated into the elements fxLayers, fxRays, and fxParams."
+  },
+  {
+    "filename": "giantbook.xml",
+    "root_element": "giantbook",
+    "root_attributes": {},
+    "folder": "unknown",
+    "attributes": [],
+    "sub_elements": [],
+    "tags": [],
+    "xml_examples": [],
+    "description": "This page needs some content. You can contribute to it using the Edit Button!"
+  },
+  {
+    "filename": "itempools.xml",
+    "root_element": "ItemPools",
+    "root_attributes": {},
+    "folder": "content",
+    "attributes": [
+      {
+        "name": "Id",
+        "type": "int",
+        "possible_values": [],
+        "description": "*(Optional)* The id of the item in the itempool When using this variable, you can't use the \"name\" variable.",
+        "required": true
+      },
+      {
+        "name": "Name",
+        "type": "string",
+        "possible_values": [],
+        "description": "*(Optional, recommended)* The name of the item in the itempool. When using this variable, you can't use the \"id\" variable.",
+        "required": true
+      },
+      {
+        "name": "Weight",
+        "type": "float",
+        "possible_values": [],
+        "description": "Relative \"likelyhood\" that this item can be drawn from the pool. `Default = 1` . If this value reaches the \"RemoveOn\" value, the item will no longer be drawn from the pool",
+        "required": false
+      },
+      {
+        "name": "DecreaseBy",
+        "type": "float",
+        "possible_values": [],
+        "description": "Value on how often the item can be drawn from the pool. `Default = 1`Everytime an item is drawn from the pool, this value is substracted from its Weight. This makes the item appear less likely on reroll till the weight reaches the \"RemoveOn\" value.",
+        "required": false
+      },
+      {
+        "name": "RemoveOn",
+        "type": "float",
+        "possible_values": [],
+        "description": "Value on which Weight value the item is no longer able to be drawn from the pool. `Default = \"0.1\"`",
+        "required": false
+      }
+    ],
+    "sub_elements": [],
+    "tags": [],
+    "xml_examples": [],
+    "description": "This page needs some content. You can contribute to it using the Edit Button!"
+  },
+  {
+    "filename": "items.xml",
+    "root_element": "items",
+    "root_attributes": {},
+    "folder": "content",
+    "attributes": [
+      {
+        "name": "id",
+        "type": "int",
+        "possible_values": [],
+        "description": "Used for associating costumes and death-portrait/collection-page sprites with an item.",
+        "required": true
+      },
+      {
+        "name": "cache",
+        "type": "string",
+        "possible_values": [
+          "firedelay",
+          "damage",
+          "speed",
+          "range",
+          "tearcolor",
+          "tearflag",
+          "color",
+          "size. shotspeed",
+          "all",
+          "luck",
+          "flying",
+          "weapon",
+          "familiars"
+        ],
+        "description": "Possible values : [firedelay, damage, speed, range, tearcolor, tearflag, color, size. shotspeed, all, luck, flying, weapon, familiars].",
+        "required": false
+      },
+      {
+        "name": "name",
+        "type": "string",
+        "possible_values": [],
+        "description": "",
+        "required": true
+      },
+      {
+        "name": "description",
+        "type": "string",
+        "possible_values": [],
+        "description": "",
+        "required": false
+      },
+      {
+        "name": "gfx",
+        "type": "string",
+        "possible_values": [],
+        "description": "Path to the item image. Must be a .png saved at a bit-depth of 32 bits.",
+        "required": false
+      },
+      {
+        "name": "tags",
+        "type": "string",
+        "possible_values": [],
+        "description": "Multiple tags must be separated with a space; see below for possible values and descriptions.",
+        "required": false
+      },
+      {
+        "name": "bombs",
+        "type": "int",
+        "possible_values": [],
+        "description": "",
+        "required": false
+      },
+      {
+        "name": "keys",
+        "type": "int",
+        "possible_values": [],
+        "description": "",
+        "required": false
+      },
+      {
+        "name": "coins",
+        "type": "int",
+        "possible_values": [],
+        "description": "",
+        "required": false
+      },
+      {
+        "name": "hearts",
+        "type": "int",
+        "possible_values": [],
+        "description": "Distinct from MaxHearts, must be granted alongside MaxHearts in order to grant filled heart containers.",
+        "required": false
+      },
+      {
+        "name": "soulhearts",
+        "type": "int",
+        "possible_values": [],
+        "description": "",
+        "required": false
+      },
+      {
+        "name": "blackhearts",
+        "type": "int",
+        "possible_values": [],
+        "description": "",
+        "required": false
+      },
+      {
+        "name": "maxhearts",
+        "type": "int",
+        "possible_values": [],
+        "description": "Number of added empty heart containers.",
+        "required": false
+      },
+      {
+        "name": "maxcharges",
+        "type": "int",
+        "possible_values": [],
+        "description": "When chargetype is set to `timed`, this attribute is used to define the cooldown of the item in frames.",
+        "required": false
+      },
+      {
+        "name": "chargetype",
+        "type": "string",
+        "possible_values": [
+          "normal",
+          "timed",
+          "special"
+        ],
+        "description": "Possible values: [normal, timed, special]",
+        "required": false
+      },
+      {
+        "name": "cooldown",
+        "type": "int",
+        "possible_values": [],
+        "description": "Number of frames until this item's associated CollectibleEffect is auto-removed if granted. CollectibleEffects are automatically granted by active items on use.",
+        "required": false
+      },
+      {
+        "name": "passivecache",
+        "type": "bool",
+        "possible_values": [],
+        "description": "Calls a cache evaluation when picked up (used for acive items, e.g. Mom's Box).",
+        "required": false
+      },
+      {
+        "name": "special",
+        "type": "bool",
+        "possible_values": [],
+        "description": "",
+        "required": false
+      },
+      {
+        "name": "initcharge",
+        "type": "int",
+        "possible_values": [],
+        "description": "How many charges should this active item have when first picked up (e.g. Everything Jar[ ](#)).",
+        "required": false
+      },
+      {
+        "name": "devilprice",
+        "type": "int",
+        "possible_values": [
+          "1",
+          "2"
+        ],
+        "description": "Possible values: ['1','2']",
+        "required": false
+      },
+      {
+        "name": "shopprice",
+        "type": "int",
+        "possible_values": [],
+        "description": "",
+        "required": false
+      },
+      {
+        "name": "addcostumeonpickup",
+        "type": "bool",
+        "possible_values": [],
+        "description": "",
+        "required": false
+      },
+      {
+        "name": "persistent",
+        "type": "bool",
+        "possible_values": [],
+        "description": "Determines whether the item's associated CollectibleEffect is retained when transitioning between rooms, or across save & continue. CollectibleEffects are automatically granted by active items on use. False by default.",
+        "required": false
+      },
+      {
+        "name": "achievement",
+        "type": "int",
+        "possible_values": [],
+        "description": "Ties the item to be unlocked by a vanilla achievement.",
+        "required": false
+      },
+      {
+        "name": "quality",
+        "type": "int",
+        "possible_values": [
+          "0",
+          "1",
+          "2",
+          "3",
+          "4"
+        ],
+        "description": "Possible values: ['0', '1', '2', '3', '4'].",
+        "required": false
+      },
+      {
+        "name": "craftquality",
+        "type": "int",
+        "possible_values": [
+          "-1",
+          "0",
+          "1",
+          "2",
+          "3",
+          "4"
+        ],
+        "description": "Possible values: ['-1', '0', '1', '2', '3', '4']. A value of -1 prevents this item from appearing in Bag of Crafting.",
+        "required": false
+      },
+      {
+        "name": "hidden",
+        "type": "bool",
+        "possible_values": [],
+        "description": "Prevents the item from appearing in Death Certificate, or on the collection menu (e.g. Familiar-ItemType Damocles).",
+        "required": false
+      },
+      {
+        "name": "cleareffectsonremove",
+        "type": "bool",
+        "possible_values": [],
+        "description": "Clears any effects of the item upon removal. Note: This is currently not used by any vanilla item.",
+        "required": false
+      }
+    ],
+    "sub_elements": [],
+    "tags": [],
+    "xml_examples": [],
+    "description": ""
+  },
+  {
+    "filename": "items_metadata.xml",
+    "root_element": "items_metadata",
+    "root_attributes": {},
+    "folder": "content",
+    "attributes": [
+      {
+        "name": "id",
+        "type": "int",
+        "possible_values": [],
+        "description": "ID of the corresponding Collectible or Trinket",
+        "required": true
+      },
+      {
+        "name": "quality",
+        "type": "int",
+        "possible_values": [
+          "0",
+          "1",
+          "2",
+          "3",
+          "4"
+        ],
+        "description": "Possible values: ['0', '1', '2', '3', '4']",
+        "required": false
+      },
+      {
+        "name": "tags",
+        "type": "string",
+        "possible_values": [
+          "battery",
+          "bob",
+          "mushroom",
+          "nogreed",
+          "nolostbr",
+          "offensive",
+          "summonable",
+          "poop",
+          "tearsup",
+          "uniquefamiliar",
+          "mom",
+          "baby",
+          "quest",
+          "food",
+          "spider",
+          "monstermanual",
+          "devil",
+          "book",
+          "fly",
+          "stars",
+          "nokeeper",
+          "nocantrip",
+          "angel",
+          "syringe",
+          "dead",
+          "guppy",
+          "tech"
+        ],
+        "description": "Multiple tags must be split with a space. Possible values: ['', 'battery', 'bob', 'mushroom', 'nogreed', 'nolostbr', 'offensive', 'summonable', 'poop', 'tearsup', 'uniquefamiliar', 'mom', 'baby', 'quest', 'food', 'spider', 'monstermanual', 'devil', 'book', 'fly', 'stars', 'nokeeper', 'nocantrip', 'angel', 'syringe', 'dead', 'guppy', 'tech']",
+        "required": false
+      }
+    ],
+    "sub_elements": [],
+    "tags": [],
+    "xml_examples": [],
+    "description": "This file is used to define additional informations for Collectibles or Trinkets. This includes the quality, and special properties like transformations or gameplay interactions."
+  },
+  {
+    "filename": "locusts.xml",
+    "root_element": "locusts",
+    "root_attributes": {},
+    "folder": "content",
+    "attributes": [
+      {
+        "name": "name",
+        "type": "string",
+        "possible_values": [],
+        "description": "Name of the color which will be used to reference it in the \"locust\" nodes",
+        "required": true
+      },
+      {
+        "name": "r",
+        "type": "int",
+        "possible_values": [],
+        "description": "Red",
+        "required": false
+      },
+      {
+        "name": "g",
+        "type": "int",
+        "possible_values": [],
+        "description": "Green",
+        "required": false
+      },
+      {
+        "name": "b",
+        "type": "int",
+        "possible_values": [],
+        "description": "Blue",
+        "required": false
+      },
+      {
+        "name": "or",
+        "type": "int",
+        "possible_values": [],
+        "description": "Offset Red",
+        "required": false
+      },
+      {
+        "name": "og",
+        "type": "int",
+        "possible_values": [],
+        "description": "Offset Blue",
+        "required": false
+      },
+      {
+        "name": "ob",
+        "type": "int",
+        "possible_values": [],
+        "description": "Offset Green",
+        "required": false
+      }
+    ],
+    "sub_elements": [
+      {
+        "name": "color",
+        "description": "",
+        "attributes": [
+          {
+            "name": "name",
+            "type": "string",
+            "possible_values": [],
+            "description": "Name of the color which will be used to reference it in the \"locust\" nodes",
+            "required": true
+          },
+          {
+            "name": "r",
+            "type": "int",
+            "possible_values": [],
+            "description": "Red",
+            "required": false
+          },
+          {
+            "name": "g",
+            "type": "int",
+            "possible_values": [],
+            "description": "Green",
+            "required": false
+          },
+          {
+            "name": "b",
+            "type": "int",
+            "possible_values": [],
+            "description": "Blue",
+            "required": false
+          },
+          {
+            "name": "or",
+            "type": "int",
+            "possible_values": [],
+            "description": "Offset Red",
+            "required": false
+          },
+          {
+            "name": "og",
+            "type": "int",
+            "possible_values": [],
+            "description": "Offset Blue",
+            "required": false
+          },
+          {
+            "name": "ob",
+            "type": "int",
+            "possible_values": [],
+            "description": "Offset Green",
+            "required": false
+          }
+        ]
+      }
+    ],
+    "tags": [],
+    "xml_examples": [],
+    "description": "This file is used to define the properties of Locust familiars, spawned by Abyss."
+  },
+  {
+    "filename": "minibosses.xml",
+    "root_element": "minibosses",
+    "root_attributes": {},
+    "folder": "resources",
+    "attributes": [
+      {
+        "name": "id",
+        "type": "int",
+        "possible_values": [],
+        "description": "RoomID where this streak should be triggered. The RoomID should be in increments of 10**Example**: `2020`Rooms with IDs not ending with 0 will be fitted to a possible id ending with 0. **Example**: `2023` will be sorted to `2020`.",
+        "required": true
+      }
+    ],
+    "sub_elements": [],
+    "tags": [],
+    "xml_examples": [],
+    "description": "This file is used to store the name of the miniboss in certain miniboss-rooms. The name will be displayed on a \"streak\"-animation like \"Isaac vs. MINIBOSS_NAME\""
+  },
+  {
+    "filename": "music.xml",
+    "root_element": "music",
+    "root_attributes": {},
+    "folder": "content",
+    "attributes": [
+      {
+        "name": "id",
+        "type": "int",
+        "possible_values": [],
+        "description": "The ID of the music this track defines",
+        "required": true
+      },
+      {
+        "name": "name",
+        "type": "string",
+        "possible_values": [],
+        "description": "The name of the track",
+        "required": true
+      },
+      {
+        "name": "intro",
+        "type": "string",
+        "possible_values": [],
+        "description": "The filepath to the intro of this track. Plays exactly once at the beginning of the song",
+        "required": false
+      },
+      {
+        "name": "path",
+        "type": "string",
+        "possible_values": [],
+        "description": "The filepath to the main music file. Plays after the intro",
+        "required": false
+      },
+      {
+        "name": "layerintro",
+        "type": "string",
+        "possible_values": [],
+        "description": "The filepath to the intro's layer of this track",
+        "required": false
+      },
+      {
+        "name": "layer",
+        "type": "string",
+        "possible_values": [],
+        "description": "The filepath to the layer of the song. Layers play over the song when there are a large amount of enemies in the room",
+        "required": false
+      },
+      {
+        "name": "loop",
+        "type": "bool",
+        "possible_values": [],
+        "description": "Whether or not the main track should loop indefinitely.",
+        "required": false
+      },
+      {
+        "name": "layermode",
+        "type": "int",
+        "possible_values": [],
+        "description": "",
+        "required": false
+      },
+      {
+        "name": "layerfadespeed",
+        "type": "float",
+        "possible_values": [],
+        "description": "",
+        "required": false
+      },
+      {
+        "name": "mul",
+        "type": "float",
+        "possible_values": [],
+        "description": "",
+        "required": false
+      },
+      {
+        "name": "layermul",
+        "type": "float",
+        "possible_values": [],
+        "description": "",
+        "required": false
+      }
+    ],
+    "sub_elements": [],
+    "tags": [],
+    "xml_examples": [],
+    "description": "This file is used to store and define the music tracks the game plays. This is only background music, sound effects are in the \"sounds.xml\" file. Old tutorial: [https://www.reddit.com/r/themoddingofisaac/comments/3ebqat/all_about_music_soundfiles/](https://www.reddit.com/r/themoddingofisaac/comments/3ebqat/all_about_music_soundfiles/)"
+  },
+  {
+    "filename": "nightmares.xml",
+    "root_element": "nightmares",
+    "root_attributes": {},
+    "folder": "content",
+    "attributes": [],
+    "sub_elements": [],
+    "tags": [],
+    "xml_examples": [],
+    "description": "Used to store all animation paths to the nightmares (dream sequence between stage transitions)"
+  },
+  {
+    "filename": "playerforms.xml",
+    "root_element": "playerforms",
+    "root_attributes": {},
+    "folder": "content",
+    "attributes": [
+      {
+        "name": "id",
+        "type": "int",
+        "possible_values": [],
+        "description": "",
+        "required": true
+      },
+      {
+        "name": "name",
+        "type": "string",
+        "possible_values": [],
+        "description": "Internal name of the transformation",
+        "required": true
+      },
+      {
+        "name": "costume",
+        "type": "int",
+        "possible_values": [],
+        "description": "Costume ID",
+        "required": false
+      },
+      {
+        "name": "tags",
+        "type": "string",
+        "possible_values": [],
+        "description": "Item-Tags that count towards that transformations",
+        "required": false
+      },
+      {
+        "name": "cache",
+        "type": "string",
+        "possible_values": [],
+        "description": "Cache flags that should update when this transformation is triggered",
+        "required": false
+      }
+    ],
+    "sub_elements": [],
+    "tags": [],
+    "xml_examples": [],
+    "description": "This file is used to define transformations."
+  },
+  {
+    "filename": "players.xml",
+    "root_element": "players",
+    "root_attributes": {
+      "root": "gfx/characters/costumes/",
+      "portraitroot": "gfx/ui/boss/",
+      "nameimageroot": "gfx/ui/boss/"
+    },
+    "folder": "content",
+    "attributes": [
+      {
+        "name": "name",
+        "type": "string",
+        "possible_values": [],
+        "description": "Name of the character (has to match the one in CharacterMenu.anm2)",
+        "required": true
+      },
+      {
+        "name": "skin",
+        "type": "string",
+        "possible_values": [],
+        "description": "Path of the character spritesheet",
+        "required": false
+      },
+      {
+        "name": "skinColor",
+        "type": "int",
+        "possible_values": [],
+        "description": "Default skin color of the character (-1 = all, 0 = white, 1 = black, 2 = blue, 3 = red, 4 = green, 5 = grey)",
+        "required": false
+      },
+      {
+        "name": "nameimage",
+        "type": "string",
+        "possible_values": [],
+        "description": "Name for vs. screen",
+        "required": false
+      },
+      {
+        "name": "portrait",
+        "type": "string",
+        "possible_values": [],
+        "description": "Portrait for the vs. screen",
+        "required": false
+      },
+      {
+        "name": "extraportrait",
+        "type": "string",
+        "possible_values": [],
+        "description": ".anm2 file that will be displayed on the vs. screen alongside the defined image in the \"portrait\" attribute",
+        "required": false
+      },
+      {
+        "name": "hp",
+        "type": "int",
+        "possible_values": [],
+        "description": "Starting red health (1 = half heart)",
+        "required": false
+      },
+      {
+        "name": "armor",
+        "type": "int",
+        "possible_values": [],
+        "description": "Starting soul hearts (1 = half soul heart)",
+        "required": false
+      },
+      {
+        "name": "black",
+        "type": "int",
+        "possible_values": [],
+        "description": "Starting  black hearts (1 = half black heart)",
+        "required": false
+      },
+      {
+        "name": "items",
+        "type": "int",
+        "possible_values": [],
+        "description": "Starting item ID (can separate with a comma to add more than one)",
+        "required": false
+      },
+      {
+        "name": "trinket",
+        "type": "int",
+        "possible_values": [],
+        "description": "Starting trinket ID",
+        "required": false
+      },
+      {
+        "name": "costume",
+        "type": "int",
+        "possible_values": [],
+        "description": "",
+        "required": false
+      },
+      {
+        "name": "costumeSuffix",
+        "type": "string",
+        "possible_values": [],
+        "description": "Equal to the suffix of a directory to use for character-specific costumes. For example, The Forgotten's costumeSuffix is `_forgotten`, which means that his corresponding directory is located at `C:\\Program Files (x86)\\Steam\\steamapps\\common\\The Binding of Isaac Rebirth\\resources-dlc3\\gfx\\characters\\costumes_forgotten`.",
+        "required": false
+      },
+      {
+        "name": "bombs",
+        "type": "int",
+        "possible_values": [],
+        "description": "Starting bombs",
+        "required": false
+      },
+      {
+        "name": "keys",
+        "type": "string",
+        "possible_values": [],
+        "description": "Starting keys",
+        "required": false
+      },
+      {
+        "name": "coins",
+        "type": "int",
+        "possible_values": [],
+        "description": "Starting coins",
+        "required": false
+      },
+      {
+        "name": "card",
+        "type": "int",
+        "possible_values": [],
+        "description": "Starting card ID",
+        "required": false
+      },
+      {
+        "name": "pill",
+        "type": "int",
+        "possible_values": [],
+        "description": "",
+        "required": false
+      },
+      {
+        "name": "canShoot",
+        "type": "bool",
+        "possible_values": [],
+        "description": "False = blindfolded",
+        "required": false
+      },
+      {
+        "name": "achievement",
+        "type": "int",
+        "possible_values": [],
+        "description": "Tie the character to a vanilla achievement",
+        "required": false
+      },
+      {
+        "name": "broken",
+        "type": "int",
+        "possible_values": [],
+        "description": "Starting broken hearts [ ](#)",
+        "required": false
+      },
+      {
+        "name": "pocketActive",
+        "type": "int",
+        "possible_values": [],
+        "description": "Starting pocket active item ID [ ](#)",
+        "required": false
+      },
+      {
+        "name": "birthright",
+        "type": "string",
+        "possible_values": [],
+        "description": "Message when picking up Birthright [ ](#)",
+        "required": false
+      },
+      {
+        "name": "bSkinParent",
+        "type": "string",
+        "possible_values": [],
+        "description": "Name of the normal version of your tainted character [ ](#)",
+        "required": false
+      },
+      {
+        "name": "hidden",
+        "type": "bool",
+        "possible_values": [],
+        "description": "True = the character won't appear in the selection screen [ ](#)",
+        "required": false
+      }
+    ],
+    "sub_elements": [],
+    "tags": [],
+    "xml_examples": [
+      "<players root=\"gfx/characters/costumes/\"\n         portraitroot=\"gfx/ui/boss/\"\n         nameimageroot=\"gfx/ui/boss/\">\n\t<player name=\"Bob\" skin=\"character_Bob.png\" hp=\"4\"\n          black=\"4\" pocketActive=\"712\" items=\"1,4\" keys=\"3\"\n          nameimage=\"playername_Bob.png\"\n          portrait=\"playerportrait_Bob.png\"\n          skinColor=\"-1\" canShoot=\"false\"\n          birthright=\"You are now a gamer\"/>\n</players>"
+    ],
+    "description": "This page needs some content. You can contribute to it using the Edit Button!"
+  },
+  {
+    "filename": "pocketitems.xml",
+    "root_element": "pocketitems",
+    "root_attributes": {
+      "type": "tarot",
+      "pickup": "1",
+      "description": "Where journey begins",
+      "id": "1",
+      "name": "0 - The Fool",
+      "announcer": "375",
+      "announcerdelay": "60",
+      "mimiccharge": "2"
+    },
+    "folder": "content",
+    "attributes": [
+      {
+        "name": "name",
+        "type": "string",
+        "possible_values": [],
+        "description": "The name of the card.",
+        "required": true
+      },
+      {
+        "name": "description",
+        "type": "string",
+        "possible_values": [],
+        "description": "The description of the card.",
+        "required": false
+      },
+      {
+        "name": "hud",
+        "type": "string",
+        "possible_values": [],
+        "description": "The name of the card's front animation in `content/gfx/ui_cardfronts.anm2`, which is only used in mods.",
+        "required": false
+      },
+      {
+        "name": "type",
+        "type": "string",
+        "possible_values": [],
+        "description": "Either `tarot`, `tarot_reverse`, `suit`, `special`, `rune`, or `object`. All types other than `object` and `rune` can be mimicked with Blank Card, while cards of type `rune` can be mimicked with Clear Rune. [ ](#)",
+        "required": false
+      },
+      {
+        "name": "mimiccharge",
+        "type": "int",
+        "possible_values": [],
+        "description": "The amount of charge the card should take to mimic with Blank Card / Clear Rune. [ ](#)",
+        "required": false
+      },
+      {
+        "name": "pickup",
+        "type": "int",
+        "possible_values": [],
+        "description": "The entities2.xml subtype corresponding to this card's pickup. [ ](#)",
+        "required": false
+      },
+      {
+        "name": "announcer",
+        "type": "int",
+        "possible_values": [],
+        "description": "The sound ID to play when the card is used.",
+        "required": false
+      },
+      {
+        "name": "announcerdelay",
+        "type": "int",
+        "possible_values": [],
+        "description": "The delay in frames between card use and the sound provided being played.",
+        "required": false
+      },
+      {
+        "name": "achievement",
+        "type": "int",
+        "possible_values": [],
+        "description": "Ties the card to a vanilla achievement.",
+        "required": false
+      },
+      {
+        "name": "greedmode",
+        "type": "bool",
+        "possible_values": [],
+        "description": "Is the pocketitem available in greedmode. Default = true",
+        "required": false
+      }
+    ],
+    "sub_elements": [],
+    "tags": [],
+    "xml_examples": [
+      "<card type=\"tarot\" pickup=\"1\" description=\"Where journey begins\" id=\"1\" name=\"0 - The Fool\" announcer=\"375\" announcerdelay=\"60\" mimiccharge=\"2\" />",
+      "<rune type=\"rune\" pickup=\"3\" achievement=\"89\" description=\"Some description\" id=\"32\" name=\"Some Rune\" announcer=\"341\" mimiccharge=\"2\" />",
+      "<card type=\"object\" name=\"Custom Object\" description=\"\" hud=\"Custom Object\" pickup=\"160\"/>",
+      "<entities anm2root=\"gfx/\" version=\"5\">\n<entity anm2path=\"custom_object.anm2\" baseHP=\"0\" boss=\"0\" champion=\"0\" collisionDamage=\"0\" collisionMass=\"3\" collisionRadius=\"12\" friction=\"1\" id=\"5\" name=\"Custom Object\" numGridCollisionPoints=\"24\" shadowSize=\"16\" stageHP=\"0\" variant=\"300\" subtype=\"160\">\n\t   <preload-snd id=\"8\" /> <!-- BOOK_PAGE_TURN_12 -->\n</entity>\n</entities>",
+      "<pilleffect announcer2=\"760\" id=\"0\" name=\"Bad Gas\" announcer=\"328\" class=\"1+\" mimiccharge=\"1\" />",
+      "<pocketitems>\n    <card type=\"object\" name=\"Custom Object\" description=\"It's custom!\" hud=\"Custom Object\" pickup=\"160\"/>\n    <pilleffect name=\"Damage Up\" class=\"3+\" mimiccharge=\"12\" />\n</pocketitems>"
+    ],
+    "description": ""
+  },
+  {
+    "filename": "preload.xml",
+    "root_element": "preload",
+    "root_attributes": {},
+    "folder": "content",
+    "attributes": [],
+    "sub_elements": [],
+    "tags": [],
+    "xml_examples": [],
+    "description": "This page needs some content. You can contribute to it using the Edit Button!"
+  },
+  {
+    "filename": "recipes.xml",
+    "root_element": "recipes",
+    "root_attributes": {},
+    "folder": "unknown",
+    "attributes": [
+      {
+        "name": "input",
+        "type": "string",
+        "possible_values": [],
+        "description": "Coded string of characters representing crafting ingredients (e.g. \"bbbbbbbb\")",
+        "required": false
+      },
+      {
+        "name": "output",
+        "type": "int",
+        "possible_values": [],
+        "description": "Item ID of the output",
+        "required": false
+      }
+    ],
+    "sub_elements": [],
+    "tags": [],
+    "xml_examples": [],
+    "description": "Stores permenant recipes for Bag of Crafting that are not affected by per-run randomization."
+  },
+  {
+    "filename": "rules.txt",
+    "root_element": "rules.txt",
+    "root_attributes": {},
+    "folder": "resources",
+    "attributes": [],
+    "sub_elements": [],
+    "tags": [],
+    "xml_examples": [],
+    "description": "This file is used to store all \"rules\" displayed when using the \"Rules\" card. Rule-entries can have up to 3 rows and should be seperated with an empty line."
+  },
+  {
+    "filename": "seedmenu.xml",
+    "root_element": "seedmenu",
+    "root_attributes": {},
+    "folder": "unknown",
+    "attributes": [],
+    "sub_elements": [],
+    "tags": [],
+    "xml_examples": [],
+    "description": "File that defines the display of the Easter Egg seed menu."
+  },
+  {
+    "filename": "seeds.txt",
+    "root_element": "seeds.txt",
+    "root_attributes": {},
+    "folder": "resources",
+    "attributes": [],
+    "sub_elements": [],
+    "tags": [],
+    "xml_examples": [],
+    "description": "A text file containing special seeds, mostly used for Easter Egg seeds. Any Seed listed in this file can not be used in the \"seed input\" dialog. (Blacklist-Behavior)"
+  },
+  {
+    "filename": "sounds.xml",
+    "root_element": "sounds",
+    "root_attributes": {},
+    "folder": "both",
+    "attributes": [
+      {
+        "name": "name",
+        "type": "string",
+        "possible_values": [],
+        "description": "Name of the Sound effect",
+        "required": true
+      }
+    ],
+    "sub_elements": [
+      {
+        "name": "sound",
+        "description": "",
+        "attributes": [
+          {
+            "name": "name",
+            "type": "string",
+            "possible_values": [],
+            "description": "Name of the Sound effect",
+            "required": true
+          }
+        ]
+      },
+      {
+        "name": "sample",
+        "description": "",
+        "attributes": [
+          {
+            "name": "weight",
+            "type": "float",
+            "possible_values": [],
+            "description": "Weight of the sound-effect when choosen by random.Lower number = less likely",
+            "required": false
+          },
+          {
+            "name": "path",
+            "type": "string",
+            "possible_values": [],
+            "description": "filepath to the .wav file",
+            "required": false
+          }
+        ]
+      }
+    ],
+    "tags": [],
+    "xml_examples": [],
+    "description": "This file is used to store informations about the Soundeffect used in the game."
+  },
+  {
+    "filename": "stages.xml",
+    "root_element": "stages",
+    "root_attributes": {},
+    "folder": "resources",
+    "attributes": [
+      {
+        "name": "id",
+        "type": "int",
+        "possible_values": [],
+        "description": "Internal identifier of the Stage",
+        "required": true
+      },
+      {
+        "name": "name",
+        "type": "string",
+        "possible_values": [],
+        "description": "Display name of the Stage",
+        "required": true
+      },
+      {
+        "name": "path",
+        "type": "string",
+        "possible_values": [],
+        "description": "Filename of the .stb file found in the \"rooms\" folder, **BUT written as an .xml file path** (simply replace .stb with .xml in your filename)",
+        "required": false
+      },
+      {
+        "name": "playerspot",
+        "type": "string",
+        "possible_values": [],
+        "description": "Path to the .png file, displayed under the player sprite, that should be used for the Boss-Fight-transition animation",
+        "required": false
+      }
+    ],
+    "sub_elements": [],
+    "tags": [],
+    "xml_examples": [],
+    "description": "This file is used to store informations about the Levels / Stages of the game."
+  },
+  {
+    "filename": "translations.xml",
+    "root_element": "translations",
+    "root_attributes": {},
+    "folder": "unknown",
+    "attributes": [
+      {
+        "name": "id",
+        "type": "string",
+        "possible_values": [],
+        "description": "short ID of the language. Used in the options.ini file and possible indicator for the resources package extention (eg. folder: \"resources.jp\")",
+        "required": true
+      }
+    ],
+    "sub_elements": [],
+    "tags": [],
+    "xml_examples": [],
+    "description": "This file is used to store a mapping of possible game translation packages. Used for Japanese and Korean. ???+ bug"
+  },
+  {
+    "filename": "wisps.xml",
+    "root_element": "wisps",
+    "root_attributes": {},
+    "folder": "unknown",
+    "attributes": [
+      {
+        "name": "name",
+        "type": "string",
+        "possible_values": [],
+        "description": "Name of the color which will be used to reference it in the \"locust\" nodes",
+        "required": true
+      },
+      {
+        "name": "r",
+        "type": "int",
+        "possible_values": [],
+        "description": "Red",
+        "required": false
+      },
+      {
+        "name": "g",
+        "type": "int",
+        "possible_values": [],
+        "description": "Green",
+        "required": false
+      },
+      {
+        "name": "b",
+        "type": "int",
+        "possible_values": [],
+        "description": "Blue",
+        "required": false
+      },
+      {
+        "name": "or",
+        "type": "int",
+        "possible_values": [],
+        "description": "Offset Red",
+        "required": false
+      },
+      {
+        "name": "og",
+        "type": "int",
+        "possible_values": [],
+        "description": "Offset Blue",
+        "required": false
+      },
+      {
+        "name": "ob",
+        "type": "int",
+        "possible_values": [],
+        "description": "Offset Green",
+        "required": false
+      }
+    ],
+    "sub_elements": [
+      {
+        "name": "color",
+        "description": "",
+        "attributes": [
+          {
+            "name": "name",
+            "type": "string",
+            "possible_values": [],
+            "description": "Name of the color which will be used to reference it in the \"locust\" nodes",
+            "required": true
+          },
+          {
+            "name": "r",
+            "type": "int",
+            "possible_values": [],
+            "description": "Red",
+            "required": false
+          },
+          {
+            "name": "g",
+            "type": "int",
+            "possible_values": [],
+            "description": "Green",
+            "required": false
+          },
+          {
+            "name": "b",
+            "type": "int",
+            "possible_values": [],
+            "description": "Blue",
+            "required": false
+          },
+          {
+            "name": "or",
+            "type": "int",
+            "possible_values": [],
+            "description": "Offset Red",
+            "required": false
+          },
+          {
+            "name": "og",
+            "type": "int",
+            "possible_values": [],
+            "description": "Offset Blue",
+            "required": false
+          },
+          {
+            "name": "ob",
+            "type": "int",
+            "possible_values": [],
+            "description": "Offset Green",
+            "required": false
+          }
+        ]
+      }
+    ],
+    "tags": [],
+    "xml_examples": [],
+    "description": "This file is used to define the properties of Wisp familiars, spawned by Book of Virtues."
+  }
+]

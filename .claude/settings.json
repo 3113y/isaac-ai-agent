@@ -1,7 +1,22 @@
 {
   "permissions": {
     "allow": [
-      "Bash(grep -oP '.{0,100}dark.{0,100}' /workspaces/AgentTheIsaac/.venv/lib/python3.12/site-packages/nicegui/static/nicegui.js)"
+      "Bash(python3 -c \"import json; data = json.load(open('/workspaces/AgentTheIsaac/processed_docs/rag_knowledge_base.json')); print(json.dumps(data[0], indent=2, ensure_ascii=False)); print('...'); print(json.dumps(data[10], indent=2, ensure_ascii=False))\")",
+      "Bash(python scripts/add_version_tags.py --dry-run)",
+      "Bash(python3 -c ' *)",
+      "Bash(python3)",
+      "Bash(python scripts/add_version_tags.py)",
+      "Bash(python demo_rag.py --rebuild --stats-only)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY)",
+      "Bash(sort -t: -k2 -n)",
+      "Bash(uv sync --extra desktop)",
+      "Bash(uv run python -m isaac_agent.desktop)",
+      "Bash(.venv/bin/python -m isaac_agent.desktop)",
+      "Bash(make desktop)",
+      "Bash(make desktop-install)"
     ]
   }
 }
