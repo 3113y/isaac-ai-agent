@@ -8,6 +8,9 @@
     "DISPLAY": "${localEnv:DISPLAY}"
   },
   "remoteUser": "root",
+  "runArgs": [
+    "--add-host=host.docker.internal:host-gateway"
+  ],
   "customizations": {
     "vscode": {
       "extensions": [

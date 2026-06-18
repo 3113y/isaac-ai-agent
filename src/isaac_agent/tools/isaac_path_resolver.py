@@ -68,6 +68,34 @@ def _find_steam_libraries(steam_root: Path) -> list[Path]:
     return libraries
 
 
+def _is_wsl() -> bool:
+    """Return True if running under Windows Subsystem for Linux."""
+    if sys.platform != "linux":
+        return False
+    try:
+        content = Path("/proc/version").read_text()
+        if "microsoft" in content.lower() or "wsl" in content.lower():
+            return True
+    except (OSError, PermissionError):
+        pass
+    return Path("/mnt/c").exists()
+
+
+def _get_windows_drives() -> list[str]:
+    """Return list of Windows drive letters accessible under /mnt/ on WSL."""
+    drives: list[str] = []
+    mnt = Path("/mnt")
+    if not mnt.exists():
+        return drives
+    try:
+        for entry in mnt.iterdir():
+            if entry.is_dir() and len(entry.name) == 1 and entry.name.isalpha():
+                drives.append(entry.name.lower())
+    except (PermissionError, OSError):
+        pass
+    return drives
+
+
 _ISAAC_MODS_SUFFIX = "steamapps/common/The Binding of Isaac Rebirth/mods"
 
 
@@ -109,6 +137,16 @@ def find_isaac_mods_dir() -> Optional[Path]:
             Path.home() / ".steam/steam" / _ISAAC_MODS_SUFFIX,
             Path.home() / ".local/share/Steam" / _ISAAC_MODS_SUFFIX,
         ])
+        # WSL2: also scan Windows drives for Steam installations
+        if _is_wsl():
+            for drive in _get_windows_drives():
+                for lib in [
+                    f"/mnt/{drive}/Program Files (x86)/Steam",
+                    f"/mnt/{drive}/Program Files/Steam",
+                    f"/mnt/{drive}/SteamLibrary",
+                    f"/mnt/{drive}/Steam",
+                ]:
+                    candidates.append(Path(lib) / _ISAAC_MODS_SUFFIX)
 
     for p in candidates:
         if p.exists():
@@ -132,6 +170,17 @@ def find_isaac_mods_dir() -> Optional[Path]:
         broad_candidates.append(Path.home())
     else:
         broad_candidates.append(Path.home())
+        # WSL2: search from known Steam roots on Windows drives (not full /mnt/ scan)
+        if _is_wsl():
+            for drive in _get_windows_drives():
+                for steam_root in [
+                    Path(f"/mnt/{drive}/Program Files (x86)/Steam"),
+                    Path(f"/mnt/{drive}/Program Files/Steam"),
+                    Path(f"/mnt/{drive}/Steam"),
+                    Path(f"/mnt/{drive}/SteamLibrary"),
+                ]:
+                    if steam_root.exists():
+                        broad_candidates.append(steam_root)
 
     needle = "The Binding of Isaac Rebirth"
     for root in broad_candidates:
@@ -182,6 +231,37 @@ def find_isaac_log_file() -> Optional[Path]:
             logger.info(f"Found Isaac log file: {p}")
             return p
 
+    # WSL2: check Windows-side Documents paths
+    if _is_wsl():
+        for drive in _get_windows_drives():
+            users_dir = Path(f"/mnt/{drive}/Users")
+            if not users_dir.exists():
+                continue
+            try:
+                for user_dir in users_dir.iterdir():
+                    if not user_dir.is_dir() or user_dir.name.startswith((".", "Public", "Default")):
+                        continue
+                    for games_dir in [
+                        "Documents/My Games/Binding of Isaac Repentance",
+                        "Documents/My Games/The Binding of Isaac Repentance",
+                        "Documents/My Games/Binding of Isaac Rebirth",
+                    ]:
+                        log_file = user_dir / games_dir / "log.txt"
+                        if log_file.exists():
+                            logger.info(f"Found Isaac log file (WSL2): {log_file}")
+                            return log_file
+            except (PermissionError, OSError):
+                continue
+
+        # Also check Proton compatdata paths on Windows-side Steam
+        compat_suffix = "steamapps/compatdata/250900/pfx/drive_c/users/steamuser/Documents/My Games/Binding of Isaac Repentance/log.txt"
+        for drive in _get_windows_drives():
+            for lib in [f"/mnt/{drive}/SteamLibrary", f"/mnt/{drive}/Steam"]:
+                log_file = Path(lib) / compat_suffix
+                if log_file.exists():
+                    logger.info(f"Found Isaac log file (WSL2 Proton): {log_file}")
+                    return log_file
+
     # Try broad search under Documents / home
     home = Path.home()
     needle = "Binding of Isaac Repentance"
@@ -194,6 +274,22 @@ def find_isaac_log_file() -> Optional[Path]:
                     return log_file
     except (PermissionError, OSError):
         pass
+
+    # WSL2: broad search under Windows Users directories
+    if _is_wsl():
+        for drive in _get_windows_drives():
+            users_dir = Path(f"/mnt/{drive}/Users")
+            if not users_dir.exists():
+                continue
+            try:
+                for found in users_dir.rglob(needle):
+                    if found.is_dir():
+                        log_file = found / "log.txt"
+                        if log_file.exists():
+                            logger.info(f"Found Isaac log file via WSL2 search: {log_file}")
+                            return log_file
+            except (PermissionError, OSError):
+                continue
 
     logger.warning("Could not auto-detect Isaac log.txt")
     return None

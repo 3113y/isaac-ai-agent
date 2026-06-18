@@ -219,8 +219,13 @@ mod:AddCallback(ModCallbacks.MC_ENTITY_TAKE_DMG,
     }
 
     def __init__(self):
-        """Initialize template manager"""
-        logger.info(f"📋 LuaTemplateManager initialized with {len(self.TEMPLATES)} templates")
+        """Initialize template manager (DEPRECATED — use ModArchitectureGuide instead)."""
+        logger.warning(
+            "LuaTemplateManager is DEPRECATED. Use ModArchitectureGuide + ReferenceTemplate "
+            "from isaac_agent.templates.patterns and isaac_agent.templates.reference_template "
+            "for the new architecture-first workflow."
+        )
+        logger.info(f"📋 LuaTemplateManager initialized with {len(self.TEMPLATES)} templates (legacy)")
 
     def get_template(self, scaffold_type: str, **kwargs) -> str:
         """

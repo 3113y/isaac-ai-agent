@@ -13,7 +13,7 @@ from typing import List, Optional
 
 from loguru import logger
 
-from isaac_agent.core.state import GeneratedCode
+from isaac_agent.core.state import GeneratedCode, GeneratedXml
 from isaac_agent.core.agent import MainAgent
 
 
@@ -74,31 +74,31 @@ class ModBuilder:
         mod_description: str = "",
         session_id: str = "",
         clean: bool = True,
+        xml_artifacts: Optional[List[GeneratedXml]] = None,
     ) -> Path:
         """
-        Build a complete mod folder from generated code artifacts.
+        Build a complete multi-file mod folder from generated code artifacts.
 
-        Produces a directory structure compatible with TBOI: Repentance:
+        Produces a directory structure matching the gold-standard Isaac mod layout:
 
             build/<mod_name>/
             ├── main.lua
             ├── metadata.xml
             ├── content/
             │   └── items.xml
+            ├── scripts/
+            │   ├── common.lua
+            │   ├── data/
+            │   │   └── data.lua
+            │   └── items/
+            │       ├── !items.lua
+            │       ├── item1.lua
+            │       └── item2.lua
             └── resources/
                 └── gfx/
 
-        Args:
-            artifacts: GeneratedCode objects from the agent workflow.
-            mod_name: Name of the mod (used as directory name).
-            mod_id: Numeric mod ID for the game.
-            mod_version: Semver version string.
-            mod_description: Description for metadata.xml.
-            session_id: Workflow session ID for provenance tracking.
-            clean: If True, remove existing build directory first.
-
-        Returns:
-            Path to the built mod directory.
+        If artifacts have file_path set (multi-file mode), each artifact is
+        written to its planned path. Otherwise falls back to single main.lua.
         """
         mod_dir = self.output_dir / mod_name
 
@@ -106,35 +106,57 @@ class ModBuilder:
             shutil.rmtree(mod_dir)
             logger.info(f"Cleaned existing build: {mod_dir}")
 
-        # Create directory structure
         mod_dir.mkdir(parents=True, exist_ok=True)
-        content_dir = mod_dir / "content"
-        resources_dir = mod_dir / "resources" / "gfx"
-        content_dir.mkdir(parents=True, exist_ok=True)
-        resources_dir.mkdir(parents=True, exist_ok=True)
 
-        # Write main.lua — combine all artifacts
-        main_lua_path = mod_dir / "main.lua"
-        combined_lua = self._combine_lua(artifacts, mod_name, session_id)
-        main_lua_path.write_text(combined_lua, encoding="utf-8")
-        logger.info(f"Wrote main.lua ({len(combined_lua)} chars)")
+        # Check if we have multi-file artifacts (architecture-first mode)
+        has_file_paths = any(getattr(a, "file_path", "") for a in artifacts)
+
+        if has_file_paths:
+            # Multi-file mode: write each artifact to its planned path
+            for artifact in artifacts:
+                if not artifact.file_path:
+                    continue
+                file_path = mod_dir / artifact.file_path
+                file_path.parent.mkdir(parents=True, exist_ok=True)
+
+                if artifact.lua_code:
+                    file_path.write_text(artifact.lua_code, encoding="utf-8")
+                    logger.info(f"Wrote {artifact.file_path} ({len(artifact.lua_code)} chars)")
+                else:
+                    file_path.touch()
+                    logger.info(f"Created empty {artifact.file_path} (placeholder)")
+        else:
+            # Legacy flat mode: combine all into main.lua for backward compat
+            main_lua_path = mod_dir / "main.lua"
+            combined_lua = self._combine_lua(artifacts, mod_name, session_id)
+            main_lua_path.write_text(combined_lua, encoding="utf-8")
+            logger.info(f"Wrote main.lua ({len(combined_lua)} chars) [legacy flat mode]")
+
+        # Ensure base directories exist
+        (mod_dir / "content").mkdir(parents=True, exist_ok=True)
+        (mod_dir / "resources" / "gfx").mkdir(parents=True, exist_ok=True)
+        (mod_dir / "resources" / "gfx" / ".gitkeep").touch()
 
         # Write metadata.xml
         metadata_path = mod_dir / "metadata.xml"
         metadata_xml = self._build_metadata(mod_name, mod_id, mod_version, mod_description)
         metadata_path.write_text(metadata_xml, encoding="utf-8")
-        logger.info(f"Wrote metadata.xml")
+        logger.info("Wrote metadata.xml")
 
-        # Write items.xml if CUSTOM_ITEM artifacts exist
-        item_artifacts = [a for a in artifacts if a.scaffold_type == "CUSTOM_ITEM"]
-        if item_artifacts:
-            items_xml_path = content_dir / "items.xml"
-            items_xml = self._build_items_xml(item_artifacts, mod_name)
-            items_xml_path.write_text(items_xml, encoding="utf-8")
-            logger.info(f"Wrote items.xml ({len(item_artifacts)} items)")
+        # Write XML files from the generation stage
+        if xml_artifacts:
+            for gen_xml in xml_artifacts:
+                if not gen_xml.entries:
+                    continue
 
-        # Place a .gitkeep in resources/gfx/
-        (resources_dir / ".gitkeep").touch()
+                folder = gen_xml.folder if gen_xml.folder not in ("unknown",) else "content"
+                target_dir = mod_dir / folder
+                target_dir.mkdir(parents=True, exist_ok=True)
+                xml_path = target_dir / gen_xml.xml_file
+
+                xml_str = self._build_xml_file(gen_xml, mod_name)
+                xml_path.write_text(xml_str, encoding="utf-8")
+                logger.info(f"Wrote {gen_xml.xml_file} ({len(gen_xml.entries)} entries) to {folder}/")
 
         logger.info(f"Mod built: {mod_dir}")
         return mod_dir
@@ -147,23 +169,19 @@ class ModBuilder:
     ) -> Path:
         """Build a mod from a completed agent workflow result.
 
-        Args:
-            result: AgentState (or dict from ainvoke) with generated_code.
-            mod_name: Name of the mod.
-            clean: If True, remove existing build directory first.
-
-        Returns:
-            Path to the built mod directory.
+        Supports both multi-file (architecture-first) and legacy flat modes.
         """
         if isinstance(result, dict):
             artifacts = result.get("generated_code", [])
             session_id = result.get("session_id", "")
             task = result.get("task")
             description = task.description if task else ""
+            xml_artifacts = result.get("generated_xml", [])
         else:
             artifacts = result.generated_code
             session_id = result.session_id
             description = result.task.description if result.task else ""
+            xml_artifacts = getattr(result, "generated_xml", [])
 
         return self.build(
             artifacts=artifacts,
@@ -171,6 +189,7 @@ class ModBuilder:
             mod_description=description,
             session_id=session_id,
             clean=clean,
+            xml_artifacts=xml_artifacts if xml_artifacts else None,
         )
 
     @staticmethod
@@ -179,7 +198,10 @@ class ModBuilder:
         mod_name: str,
         session_id: str,
     ) -> str:
-        """Combine all Lua artifacts into a single main.lua file."""
+        """DEPRECATED: Combine all Lua artifacts into a single main.lua file.
+
+        Only used for legacy flat mode when artifacts lack file_path.
+        """
         header = f"""-- =============================================================================
 -- {mod_name}
 -- Generated by Isaac AI Agent
@@ -189,7 +211,6 @@ class ModBuilder:
 
 local mod = RegisterMod("{mod_name}", 1)
 local game = Game()
-local json = require("json")
 
 """
         parts = [header]
@@ -221,24 +242,22 @@ local json = require("json")
         return ET.tostring(root, encoding="unicode", xml_declaration=True)
 
     @staticmethod
-    def _build_items_xml(
-        item_artifacts: List[GeneratedCode],
-        mod_name: str,
-    ) -> str:
-        """Generate items.xml with placeholder entries for custom items."""
-        root = ET.Element("items")
-        root.set("mod", mod_name)
+    def _build_xml_file(gen_xml: GeneratedXml, mod_name: str) -> str:
+        """Serialize a GeneratedXml to a properly formatted XML string."""
+        schema = gen_xml.xml_file.replace(".xml", "")
+        root_el = ET.Element(schema)
 
-        for i, artifact in enumerate(item_artifacts):
-            item = ET.SubElement(root, "item")
-            item.set("id", str(1000 + i))
-            item.set("name", f"{mod_name}_item_{i}")
-            item.set("type", "active")
-            item.set("description", artifact.scaffold_type)
-            item.set("gfx", f"gfx/ui/items/{mod_name}_item_{i}.png")
+        for entry in gen_xml.entries:
+            child = ET.SubElement(root_el, entry.element_tag)
+            for attr_name, attr_value in entry.attributes.items():
+                child.set(attr_name, str(attr_value))
+            for sub in entry.sub_elements:
+                sub_el = ET.SubElement(child, sub.element_tag)
+                for sattr, sval in sub.attributes.items():
+                    sub_el.set(sattr, str(sval))
 
-        _indent_xml(root)
-        return ET.tostring(root, encoding="unicode", xml_declaration=True)
+        _indent_xml(root_el)
+        return ET.tostring(root_el, encoding="unicode", xml_declaration=True)
 
     def list_builds(self) -> List[Path]:
         """List all built mod directories."""

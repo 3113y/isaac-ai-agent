@@ -8,7 +8,10 @@ def __getattr__(name):
         "TaskDefinition": ("isaac_agent.core.state", "TaskDefinition"),
         "APIReference": ("isaac_agent.core.state", "APIReference"),
         "GeneratedCode": ("isaac_agent.core.state", "GeneratedCode"),
+        "GeneratedXml": ("isaac_agent.core.state", "GeneratedXml"),
         "ValidationResult": ("isaac_agent.core.state", "ValidationResult"),
+        "FilePlan": ("isaac_agent.core.state", "FilePlan"),
+        "ModComponent": ("isaac_agent.core.state", "ModComponent"),
         "MainAgent": ("isaac_agent.core.agent", "MainAgent"),
     }
     if name in _imports:
@@ -27,6 +30,9 @@ __all__ = [
     "TaskDefinition",
     "APIReference",
     "GeneratedCode",
+    "GeneratedXml",
     "ValidationResult",
+    "FilePlan",
+    "ModComponent",
     "MainAgent",
 ]

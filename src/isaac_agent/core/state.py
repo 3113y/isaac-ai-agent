@@ -10,10 +10,15 @@ from enum import Enum
 class WorkflowStage(str, Enum):
     """Workflow pipeline stages"""
     PARSE = "parse"
+    PLAN = "plan"
     RETRIEVE = "retrieve"
+    RETRIEVE_FILE = "retrieve_file"
     GENERATE = "generate"
+    GENERATE_FILE = "generate_file"
+    XML_GENERATE = "xml_generate"
     VALIDATE = "validate"
     COMPLETE = "complete"
+    ASSEMBLE = "assemble"
     ERROR = "error"
 
 
@@ -46,13 +51,85 @@ class APIReference:
 
 
 @dataclass
+class FilePlan:
+    """Planned file in the generated mod's directory structure."""
+    relative_path: str                             # e.g., "scripts/items/my_item.lua"
+    role_description: str                          # What this file does in the mod
+    required_apis: List[str] = field(default_factory=list)  # APIs this file needs
+    dependencies: List[str] = field(default_factory=list)   # Other files it depends on
+    template_hint: str = ""                        # Which reference file to use as pattern
+    is_xml: bool = False                           # True for XML content files
+    scaffold_type: str = ""                        # Architectural pattern id
+
+
+@dataclass
+class ModComponent:
+    """A functional component in the mod (passive item, active item, etc.)"""
+    component_type: str                            # "passive_item", "active_item", "familiar", etc.
+    name: str                                      # e.g., "Damage Doubler"
+    description: str                               # What this component does
+
+
+@dataclass
 class GeneratedCode:
     """Generated Lua code artifact"""
     scaffold_type: str  # e.g., "MC_POST_GAME_STARTED"
     lua_code: str
+    file_path: str = ""                    # Relative path within the mod directory
+    role_description: str = ""             # From the FilePlan
     imports: List[str] = field(default_factory=list)
     dependencies: List[str] = field(default_factory=list)
     requires_validation: bool = True
+
+
+@dataclass
+class XmlAttribute:
+    """Describes a single attribute of an XML element from schema docs"""
+    name: str
+    type: str = "string"
+    possible_values: List[str] = field(default_factory=list)
+    description: str = ""
+    required: bool = False
+
+
+@dataclass
+class XmlSubElement:
+    """Describes a nested child element within an XML file schema"""
+    name: str
+    attributes: List["XmlAttribute"] = field(default_factory=list)
+    description: str = ""
+
+
+@dataclass
+class XmlFileSchema:
+    """Parsed schema for one XML file type in the Isaac modding API"""
+    filename: str
+    root_element: str
+    root_attributes: Dict[str, str] = field(default_factory=dict)
+    folder: str = "unknown"
+    attributes: List[XmlAttribute] = field(default_factory=list)
+    sub_elements: List[XmlSubElement] = field(default_factory=list)
+    tags: List[Dict[str, str]] = field(default_factory=list)
+    xml_examples: List[str] = field(default_factory=list)
+    description: str = ""
+
+
+@dataclass
+class XmlEntry:
+    """A single entry to be written into an XML file"""
+    element_tag: str
+    attributes: Dict[str, Any] = field(default_factory=dict)
+    sub_elements: List["XmlEntry"] = field(default_factory=list)
+
+
+@dataclass
+class GeneratedXml:
+    """Output of the XML generation stage"""
+    scaffold_type: str
+    xml_file: str
+    folder: str = "content"
+    entries: List[XmlEntry] = field(default_factory=list)
+    generated_by: str = "programmatic"
 
 
 @dataclass
@@ -68,7 +145,7 @@ class ValidationResult:
 class AgentState:
     """
     Complete state of the Isaac AI Agent workflow
-    
+
     This is the central state object that flows through the LangGraph pipeline,
     being updated at each stage.
     """
@@ -86,6 +163,13 @@ class AgentState:
     # Parsed request
     task: Optional[TaskDefinition] = None
 
+    # Architecture planning
+    file_plans: List[FilePlan] = field(default_factory=list)
+    current_file_index: int = 0
+    mod_components: List[ModComponent] = field(default_factory=list)
+    all_files_generated: bool = False
+    shared_context: str = ""  # Shared Mod_Data structure injected across files
+
     # Retrieved references
     api_references: List[APIReference] = field(default_factory=list)
     api_context: List[str] = field(default_factory=list)
@@ -97,8 +181,12 @@ class AgentState:
     # Validation
     validation_results: List[ValidationResult] = field(default_factory=list)
 
+    # XML generation
+    generated_xml: List[Any] = field(default_factory=list)
+
     # Metadata & tracking
     iterations: int = 0
+    file_iterations: int = 0  # Retries for the current file
     messages: List[Dict[str, str]] = field(default_factory=list)
     errors: List[str] = field(default_factory=list)
     

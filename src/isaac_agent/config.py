@@ -52,6 +52,7 @@ class Settings(BaseSettings):
     isaac_mod_dir: str = Field(default="./mods", alias="ISAAC_MOD_DIR")
     isaac_version: str = Field(default="1.7", alias="ISAAC_VERSION")
     lua_validator: str = Field(default="luacheck", alias="LUA_VALIDATOR")
+    xml_schema_cache_path: str = Field(default="./data/xml_schemas_cache.json", alias="XML_SCHEMA_CACHE_PATH")
 
     # Auto-detected paths (set at runtime, not from env)
     detected_mods_dir: str = ""

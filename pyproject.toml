@@ -26,8 +26,6 @@ dependencies = [
     "langgraph>=0.0.26",
     "langchain-openai>=0.0.11",
     "langchain-community>=0.0.13",
-    "fastapi>=0.104.0",
-    "uvicorn>=0.24.0",
     "pydantic>=2.0.0",
     "pydantic-settings>=2.0.0",
     "faiss-cpu>=1.7.4",
@@ -77,8 +75,9 @@ all-llms = [
     "zhipuai>=1.0.0",
 ]
 
-gui = [
-    "nicegui>=1.4.0",
+desktop = [
+    "PyQt6>=6.5.0",
+    "PyQt6-QScintilla>=2.14.0",
     "Pygments>=2.15.0",
 ]
 

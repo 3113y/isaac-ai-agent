@@ -76,5 +76,8 @@ Thumbs.db
 # Processed docs (debug/temp)
 processed_docs/
 
+# API reference docs (auto-generated)
+docs/
+
 # Large binary files
 *.mp4

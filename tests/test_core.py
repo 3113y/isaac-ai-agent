@@ -43,13 +43,13 @@ class TestAgent:
         agent = MainAgent()
         task = agent._fallback_parse("create a custom item that gives coins")
         assert "RegisterMod" in task.api_calls
-        assert "CUSTOM_ITEM" in task.lua_scaffolds
-        assert "AddCoins" in task.api_calls or "GetItemIdByName" in task.api_calls
+        assert "passive_item" in task.lua_scaffolds or "active_item" in task.lua_scaffolds
+        assert "AddCoins" in task.api_calls or "Isaac.GetItemIdByName" in task.api_calls
 
     def test_fallback_parse_entity(self):
         agent = MainAgent()
         task = agent._fallback_parse("spawn a custom enemy that explodes on death")
-        assert "CUSTOM_ENTITY" in task.lua_scaffolds
+        assert "custom_entity" in task.lua_scaffolds
         assert "EntitySpawn" in task.api_calls or "SpawnExplosion" in task.api_calls
 
     def test_fallback_parse_unknown(self):
@@ -57,7 +57,7 @@ class TestAgent:
         task = agent._fallback_parse("xyzzy foobar nothing")
         assert "RegisterMod" in task.api_calls
         assert len(task.lua_scaffolds) == 1
-        assert task.lua_scaffolds[0] == "MC_POST_GAME_STARTED"
+        assert task.lua_scaffolds[0] == "passive_item"
 
     def test_extract_json_direct(self):
         from isaac_agent.core.agent import _extract_json
@@ -249,6 +249,270 @@ class TestWorkflow:
             stage = result.stage
         assert session_id is not None
         assert stage is not None
+
+
+class TestReferenceTemplate:
+    """Test the gold-standard reference template module."""
+
+    def test_template_has_nine_files(self):
+        from isaac_agent.templates.reference_template import ReferenceTemplate
+        rt = ReferenceTemplate()
+        assert len(rt.FILES) == 9
+
+    def test_always_required_files(self):
+        from isaac_agent.templates.reference_template import ReferenceTemplate
+        rt = ReferenceTemplate()
+        required = rt.get_always_required_files()
+        required_paths = {f.relative_path for f in required}
+        assert "main.lua" in required_paths
+        assert "metadata.xml" in required_paths
+        assert "scripts/common.lua" in required_paths
+        assert "scripts/data/data.lua" in required_paths
+
+    def test_get_files_for_component(self):
+        from isaac_agent.templates.reference_template import ReferenceTemplate
+        rt = ReferenceTemplate()
+        files = rt.get_files_for_component("passive_item")
+        paths = {f.relative_path for f in files}
+        assert "scripts/items/item1.lua" in paths
+        assert "content/items.xml" in paths
+
+    def test_include_chain_order(self):
+        from isaac_agent.templates.reference_template import ReferenceTemplate
+        rt = ReferenceTemplate()
+        chain = rt.get_include_chain()
+        assert chain[0] == "main.lua"
+        assert chain[-1] == "scripts/items/item3.lua"
+
+    def test_prompt_context(self):
+        from isaac_agent.templates.reference_template import ReferenceTemplate
+        rt = ReferenceTemplate()
+        ctx = rt.as_prompt_context()
+        assert "GOLD-STANDARD" in ctx
+        assert "main.lua" in ctx
+        assert "Include chain" in ctx
+
+
+class TestModArchitectureGuide:
+    """Test the architectural patterns module."""
+
+    def test_all_patterns_present(self):
+        from isaac_agent.templates.patterns import ModArchitectureGuide
+        ag = ModArchitectureGuide()
+        patterns = ag.list_patterns()
+        assert "main_lua" in patterns
+        assert "passive_item_script" in patterns
+        assert "active_item_script" in patterns
+        assert "familiar_script" in patterns
+        assert "data_lua" in patterns
+
+    def test_get_pattern(self):
+        from isaac_agent.templates.patterns import ModArchitectureGuide
+        ag = ModArchitectureGuide()
+        p = ag.get_pattern("main_lua")
+        assert p is not None
+        assert p.relative_path_template == "main.lua"
+        assert p.is_base_file is True
+
+    def test_get_base_patterns(self):
+        from isaac_agent.templates.patterns import ModArchitectureGuide
+        ag = ModArchitectureGuide()
+        base = ag.get_base_patterns()
+        base_ids = {p.pattern_id for p in base}
+        assert "main_lua" in base_ids
+        assert "common_lua" in base_ids
+        assert "data_lua" in base_ids
+
+    def test_get_patterns_for_component(self):
+        from isaac_agent.templates.patterns import ModArchitectureGuide
+        ag = ModArchitectureGuide()
+        patterns = ag.get_patterns_for_component("passive_item")
+        ids = {p.pattern_id for p in patterns}
+        assert "passive_item_script" in ids
+        assert "data_lua" in ids
+
+    def test_prompt_context(self):
+        from isaac_agent.templates.patterns import ModArchitectureGuide
+        ag = ModArchitectureGuide()
+        patterns = [ag.get_pattern("passive_item_script")]
+        ctx = ag.as_prompt_context(patterns)
+        assert "MC_POST_EVALUATE_CACHE" in ctx
+
+
+class TestModPlanner:
+    """Test the architecture-first planner module."""
+
+    def test_planner_initialization(self):
+        from isaac_agent.core.planner import ModPlanner
+        from isaac_agent.templates.reference_template import ReferenceTemplate
+        from isaac_agent.templates.patterns import ModArchitectureGuide
+        planner = ModPlanner(
+            reference_template=ReferenceTemplate(),
+            architecture_guide=ModArchitectureGuide(),
+        )
+        assert planner is not None
+
+    def test_classify_passive_item(self):
+        from isaac_agent.core.planner import ModPlanner
+        from isaac_agent.core.state import TaskDefinition
+        planner = ModPlanner()
+        task = TaskDefinition(
+            original_request="passive item that doubles damage",
+            title="Damage Doubler",
+            description="A passive item that doubles the player's damage",
+            api_calls=["HasCollectible"],
+            lua_scaffolds=["passive_item"],
+        )
+        components = planner.classify_mod_type(task)
+        assert len(components) >= 1
+        assert any(c.component_type == "passive_item" for c in components)
+
+    def test_fallback_plan_creates_file_tree(self):
+        import asyncio
+        from isaac_agent.core.planner import ModPlanner
+        from isaac_agent.core.state import TaskDefinition
+        planner = ModPlanner()
+        task = TaskDefinition(
+            original_request="make a passive item",
+            title="Test Item",
+            description="A passive item",
+            api_calls=["HasCollectible"],
+            lua_scaffolds=["passive_item"],
+        )
+        plans, shared = asyncio.run(planner.design_architecture(task))
+        assert len(plans) >= 5  # main, metadata, common, data, items_init, item, items.xml = 7
+        paths = {p.relative_path for p in plans}
+        assert "main.lua" in paths
+        assert "scripts/data/data.lua" in paths
+        assert "metadata.xml" in paths
+        assert "content/items.xml" in paths
+        # At least one item script
+        item_files = [p for p in plans if p.relative_path.startswith("scripts/items/") and not p.is_xml]
+        assert len(item_files) >= 2  # !items.lua + item script
+
+    def test_shared_context_generation(self):
+        import asyncio
+        from isaac_agent.core.planner import ModPlanner
+        from isaac_agent.core.state import TaskDefinition
+        planner = ModPlanner()
+        task = TaskDefinition(
+            original_request="damage doubler passive",
+            title="Damage Doubler",
+            description="Passive item that doubles damage",
+            api_calls=["HasCollectible"],
+            lua_scaffolds=["passive_item"],
+        )
+        _, shared = asyncio.run(planner.design_architecture(task))
+        assert "Mod_Data" in shared
+        assert "Isaac.GetItemIdByName" in shared
+
+
+class TestFilePlanState:
+    """Test the new FilePlan and ModComponent state models."""
+
+    def test_file_plan_creation(self):
+        from isaac_agent.core.state import FilePlan
+        plan = FilePlan(
+            relative_path="scripts/items/test.lua",
+            role_description="Test passive item",
+            required_apis=["HasCollectible"],
+            template_hint="passive_item_script",
+        )
+        assert plan.relative_path == "scripts/items/test.lua"
+        assert plan.is_xml is False
+        assert "HasCollectible" in plan.required_apis
+
+    def test_mod_component_creation(self):
+        from isaac_agent.core.state import ModComponent
+        comp = ModComponent(
+            component_type="passive_item",
+            name="Test",
+            description="A test item",
+        )
+        assert comp.component_type == "passive_item"
+
+    def test_generated_code_has_new_fields(self):
+        from isaac_agent.core.state import GeneratedCode
+        code = GeneratedCode(
+            scaffold_type="passive_item_script",
+            lua_code="local x = 1",
+            file_path="scripts/items/test.lua",
+            role_description="Passive item script",
+        )
+        assert code.file_path == "scripts/items/test.lua"
+        assert code.role_description == "Passive item script"
+
+    def test_agent_state_has_new_fields(self):
+        from isaac_agent.core.state import AgentState
+        state = AgentState(session_id="test")
+        assert state.file_plans == []
+        assert state.current_file_index == 0
+        assert state.mod_components == []
+        assert state.all_files_generated is False
+        assert state.shared_context == ""
+        assert state.file_iterations == 0
+
+
+class TestMultiFileBuild:
+    """Test the multi-file build system."""
+
+    def test_build_with_file_paths(self, tmp_path):
+        from isaac_agent.build import ModBuilder
+        from isaac_agent.core.state import GeneratedCode
+        builder = ModBuilder(output_dir=str(tmp_path))
+        artifacts = [
+            GeneratedCode(
+                scaffold_type="main_lua",
+                lua_code='local mod = RegisterMod("test", 1)\ninclude("scripts.common")',
+                file_path="main.lua",
+            ),
+            GeneratedCode(
+                scaffold_type="common_lua",
+                lua_code='include("scripts.data.data")\ninclude("scripts.items.!items")',
+                file_path="scripts/common.lua",
+            ),
+            GeneratedCode(
+                scaffold_type="data_lua",
+                lua_code='local Mod_Data = {Info = {Items = {}}}',
+                file_path="scripts/data/data.lua",
+            ),
+        ]
+        mod_dir = builder.build(
+            artifacts=artifacts,
+            mod_name="test_mod",
+            clean=True,
+        )
+        assert mod_dir.exists()
+        assert (mod_dir / "main.lua").exists()
+        assert (mod_dir / "scripts" / "common.lua").exists()
+        assert (mod_dir / "scripts" / "data" / "data.lua").exists()
+        assert (mod_dir / "metadata.xml").exists()
+
+        # Verify content
+        main_content = (mod_dir / "main.lua").read_text()
+        assert "RegisterMod" in main_content
+        assert 'include("scripts.common")' in main_content
+
+    def test_build_legacy_flat_mode(self, tmp_path):
+        from isaac_agent.build import ModBuilder
+        from isaac_agent.core.state import GeneratedCode
+        builder = ModBuilder(output_dir=str(tmp_path))
+        artifacts = [
+            GeneratedCode(
+                scaffold_type="MOD_INIT",
+                lua_code='local mod = RegisterMod("legacy", 1)',
+            ),
+        ]
+        mod_dir = builder.build(
+            artifacts=artifacts,
+            mod_name="legacy_mod",
+            clean=True,
+        )
+        assert mod_dir.exists()
+        assert (mod_dir / "main.lua").exists()
+        # Legacy mode writes all to main.lua
+        content = (mod_dir / "main.lua").read_text()
+        assert "legacy" in content
 
 
 # Run tests

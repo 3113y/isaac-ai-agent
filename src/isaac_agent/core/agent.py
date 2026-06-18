@@ -23,12 +23,20 @@ from isaac_agent.core.state import (
     APIReference,
     GeneratedCode,
     ValidationResult,
+    FilePlan,
+    ModComponent,
 )
 from isaac_agent.tools.vector_rag import VectorRAG, IsaacAPISearchTool
 from isaac_agent.tools.rag_bridge import RAGBridge
 from isaac_agent.templates.lua_skeletons import LuaTemplateManager
+from isaac_agent.templates.reference_template import ReferenceTemplate
+from isaac_agent.templates.patterns import ModArchitectureGuide, FilePattern
+from isaac_agent.core.planner import ModPlanner
 from isaac_agent.tools.isaac_path_resolver import find_isaac_mods_dir, find_isaac_log_file
 from isaac_agent.tools.isaac_error_analyzer import parse_log_errors, analyze_and_suggest
+from isaac_agent.xml.schema_parser import XmlSchemaParser
+from isaac_agent.xml.scaffold_mapping import resolve_xml_files
+from isaac_agent.xml.xml_generator import XmlGenerator
 from isaac_agent.config import settings
 
 
@@ -175,14 +183,14 @@ def _run_luacheck(code: str) -> Optional[ValidationResult]:
 
 class MainAgent:
     """
-    Main orchestrator for the Isaac AI Agent workflow
+    Main orchestrator for the Isaac AI Agent workflow.
 
-    Workflow pipeline:
-    1. PARSE: Extract structured task from natural language (LLM-driven)
-    2. RETRIEVE: Search Isaac API documentation
-    3. GENERATE: Create Lua code using templates
-    4. VALIDATE: Check generated code with luacheck
-    5. COMPLETE: Return final artifacts
+    Architecture-first workflow pipeline:
+    1. PARSE: Extract structured task from natural language
+    2. PLAN: Design complete multi-file project structure
+    3. [Per-file loop]: RETRIEVE -> GENERATE -> VALIDATE
+    4. XML_GENERATE: Create XML data files
+    5. ASSEMBLE: Return final multi-file artifacts
     """
 
     def __init__(
@@ -190,13 +198,32 @@ class MainAgent:
         llm: Optional[BaseLanguageModel] = None,
         api_search_tool: Optional[VectorRAG] = None,
         template_manager: Optional[LuaTemplateManager] = None,
+        reference_template: Optional[ReferenceTemplate] = None,
+        architecture_guide: Optional[ModArchitectureGuide] = None,
         max_iterations: int = 5,
         use_vector_search: bool = True,
     ):
-        """Initialize the agent with optional components"""
+        """Initialize the agent with optional components."""
         self.llm = llm
-        self.template_manager = template_manager or LuaTemplateManager()
         self.max_iterations = max_iterations
+
+        # Architecture-first components (new)
+        self.reference_template = reference_template or ReferenceTemplate()
+        self.architecture_guide = architecture_guide or ModArchitectureGuide()
+        self.planner = ModPlanner(
+            reference_template=self.reference_template,
+            architecture_guide=self.architecture_guide,
+            llm=self.llm,
+        )
+
+        # Legacy template manager (kept for backward compat, deprecated)
+        self.template_manager = template_manager or LuaTemplateManager()
+
+        # Initialize XML schema parser and generator
+        cache_path = settings.xml_schema_cache_path if hasattr(settings, 'xml_schema_cache_path') else None
+        schema_parser = XmlSchemaParser(cache_path=cache_path)
+        self.xml_schemas = schema_parser.parse_all()
+        self.xml_generator = XmlGenerator(schemas=self.xml_schemas, llm=self.llm)
 
         # Prefer RAGBridge (full knowledge base) over plain VectorRAG
         if api_search_tool:
@@ -221,7 +248,7 @@ class MainAgent:
         self.graph = self._build_graph()
         self.compiled_graph = self.graph.compile()
 
-        logger.info("Isaac AI Agent initialized with Vector RAG")
+        logger.info("Isaac AI Agent initialized (architecture-first mode)")
 
     def _detect_paths(self):
         """Auto-detect Isaac mods directory and log file on this machine."""
@@ -266,11 +293,6 @@ class MainAgent:
         """Build the system prompt for LLM-based task parsing."""
         if libraries is None:
             libraries = []
-        templates = self.template_manager.list_templates()
-        template_lines = "\n".join(
-            f"  - {name}: {self.template_manager.get_template_description(name)}"
-            for name in templates
-        )
         lib_note = ""
         if libraries:
             lib_note = f"\nThe user has selected these modding libraries as dependencies: {', '.join(libraries)}. Prefer API calls that are compatible with these libraries."
@@ -281,60 +303,115 @@ Target DLC version: {dlc_version}. Only suggest API functions that are compatibl
 
 Given the user's natural language description, determine:
 1. A concise title and detailed description of the mod
-2. Which Isaac API functions are needed (use exact names like RegisterMod, GetPlayer, AddHearts, AddCallback, EntitySpawn, etc.)
-3. Which Lua code scaffolds fit the use case
-
-Available Lua code scaffolds:
-{template_lines}
+2. Which Isaac API functions are needed (use exact names like RegisterMod, GetPlayer, AddHearts, AddCallback, EntitySpawn, Isaac.GetItemIdByName, HasCollectible, etc.)
+3. Which mod component types are involved: passive_item, active_item, familiar, room_modifier, player_modifier, custom_entity
 
 Respond with ONLY a JSON object (no markdown, no explanation):
 {{
     "title": "<short descriptive title>",
     "description": "<detailed description of what the mod does>",
     "api_calls": ["Function1", "Function2", ...],
-    "lua_scaffolds": ["SCAFFOLD_NAME_1", ...]
+    "component_types": ["passive_item", ...]
 }}
 
-Choose lua_scaffolds ONLY from the available list above. Choose api_calls using your knowledge of the Isaac modding API."""
+Choose api_calls using your knowledge of the Isaac modding API."""
 
     def _build_generation_prompt(
         self,
-        scaffold_type: str,
-        template: str,
+        file_plan: FilePlan,
+        pattern: Optional[FilePattern],
         task_title: str,
         task_description: str,
         api_context: str,
+        shared_context: str = "",
         dlc_version: str = "REP+",
         libraries: list = None,
     ) -> str:
-        """Build the system prompt for LLM-based Lua code generation."""
+        """Build the system prompt for per-file Lua code generation.
+
+        Each file gets a focused prompt with only the context it needs:
+        - The file's specific role in the mod architecture
+        - Architectural pattern guidance (not a rigid template)
+        - Only the APIs this specific file needs
+        - Shared Mod_Data context for cross-file consistency
+        - Reference example as few-shot pattern
+        """
         if libraries is None:
             libraries = []
         lib_note = ""
         if libraries:
             lib_note = f"\nRequired modding libraries: {', '.join(libraries)}. Use their APIs where appropriate."
+
+        pattern_section = ""
+        if pattern:
+            pattern_section = f"""
+Architectural pattern: {pattern.pattern_id}
+File role: {pattern.role_description}
+Position in include chain: {pattern.include_chain_position}
+Callback conventions: {', '.join(pattern.callback_patterns) if pattern.callback_patterns else 'None (base/structural file)'}
+
+Reference example:
+```lua
+{pattern.reference_code}
+```
+"""
+        shared_section = ""
+        if shared_context:
+            shared_section = f"""
+=== SHARED MOD CONTEXT ===
+The following Mod_Data structure is shared across all files in this mod.
+Reference these IDs when checking for items in callback functions:
+
+```lua
+{shared_context}
+```
+"""
+
+        # Build naming instruction — inject the concrete example when this is an item file
+        naming_rule = ""
+        if file_plan.relative_path.startswith("scripts/items/") and not file_plan.relative_path.endswith("!items.lua"):
+            naming_rule = """
+=== NAMING RULES FOR THIS FILE ===
+The names Item1/Item2/passive_function1 in the reference pattern are FORMAT PLACEHOLDERS.
+You MUST replace them with descriptive names derived from the user's request.
+
+Example (user asks for "翻倍伤害的被动道具"):
+  item1 -> damage_multiplier (lowercase_with_underscores for file names)
+  Item1 -> DamageMultiplier (PascalCase for Mod_Data keys)
+  passive_function1 -> damage_multiplier_effect (descriptive function name)
+  "item1" -> "damage_multiplier" (string passed to Isaac.GetItemIdByName)
+
+Your function names MUST reflect what the item DOES. Be creative.
+Read the mod task description and derive real English names from it.
+"""
+
         return f"""You are an expert Lua modder for The Binding of Isaac: Repentance.
-Generate complete, working Lua mod code based on the task requirements.
+Generate complete, working Lua code for a SPECIFIC FILE in a multi-file mod project.
 
 Target DLC version: {dlc_version}. Only use APIs compatible with {dlc_version}.{lib_note}
 
-Task: {task_title}
+=== MOD TASK ===
+Title: {task_title}
 Description: {task_description}
 
-The code should follow this scaffold pattern ({scaffold_type}):
-
-{template}
-
-Relevant API documentation:
+=== THIS FILE ===
+Path: {file_plan.relative_path}
+Role: {file_plan.role_description}
+{pattern_section}
+{shared_section}
+{naming_rule}
+=== API DOCUMENTATION FOR THIS FILE ===
 {api_context if api_context else "Use standard Isaac modding API patterns (RegisterMod, AddCallback, etc.)"}
 
 Instructions:
-1. Fill in the template with actual game logic that fulfills the task requirements
-2. Use the API functions shown in the documentation above
-3. Handle edge cases and errors appropriately
-4. Add comments explaining key logic
-5. Return ONLY the complete Lua code, no markdown code fences, no explanations
-6. The code must be syntactically valid Lua"""
+1. Generate ONLY the code for this specific file ({file_plan.relative_path})
+2. This is ONE file in a multi-file mod — do NOT include RegisterMod or includes unless this IS main.lua
+3. For item scripts: reference Mod_Data.Info.Items.{ItemName} for item IDs (defined in scripts/data/data.lua)
+4. Handle edge cases and errors appropriately
+5. Return ONLY the complete Lua code (or XML for xml files), no markdown fences, no explanations
+6. The code must be syntactically valid Lua
+7. Do NOT generate code for other files — focus ONLY on {file_plan.relative_path}
+8. CRITICAL: Replace ALL placeholder names from the reference pattern with descriptive English names derived from the user's task. Use ASCII-only, descriptive identifiers that reflect what the item DOES."""
 
     # ------------------------------------------------------------------
     # LLM-based task parsing
@@ -358,19 +435,20 @@ Instructions:
             title=parsed.get("title", "Untitled Mod"),
             description=parsed.get("description", user_input),
             api_calls=parsed.get("api_calls", []),
-            lua_scaffolds=parsed.get("lua_scaffolds", []),
+            lua_scaffolds=parsed.get("component_types", parsed.get("lua_scaffolds", [])),
             dlc_version=dlc_version,
             libraries=libraries,
         )
-        # Validate scaffolds against known templates
-        valid_scaffolds = [
-            s for s in task.lua_scaffolds
-            if self.template_manager.validate_template(s)
+
+        # Validate component types against known components
+        valid_components = [
+            c for c in task.lua_scaffolds
+            if c in ("passive_item", "active_item", "familiar", "room_modifier", "player_modifier", "custom_entity")
         ]
-        if valid_scaffolds:
-            task.lua_scaffolds = valid_scaffolds
+        if valid_components:
+            task.lua_scaffolds = valid_components
         else:
-            task.lua_scaffolds = ["MOD_INIT"]
+            task.lua_scaffolds = ["passive_item"]
 
         return task
 
@@ -383,7 +461,7 @@ Instructions:
             "health": ["GetPlayer", "AddHearts"],
             "heart": ["GetPlayer", "AddHearts", "AddSoulHearts"],
             "player": ["GetPlayer"],
-            "item": ["GetItemIdByName", "AddItemFromPool"],
+            "item": ["Isaac.GetItemIdByName", "HasCollectible"],
             "entity": ["EntitySpawn", "GetDescendants"],
             "enemy": ["EntitySpawn", "GetDescendants"],
             "spawn": ["EntitySpawn"],
@@ -398,6 +476,12 @@ Instructions:
             "key": ["AddKeys"],
             "event": ["AddCallback", "MC_POST_GAME_STARTED"],
             "callback": ["AddCallback"],
+            "passive": ["HasCollectible", "MC_POST_EVALUATE_CACHE", "Game.GetNumPlayers"],
+            "active": ["MC_USE_ITEM", "HasCollectible"],
+            "familiar": ["MC_FAMILIAR_INIT", "MC_FAMILIAR_UPDATE"],
+            "跟班": ["MC_FAMILIAR_INIT", "MC_FAMILIAR_UPDATE"],
+            "主动": ["MC_USE_ITEM", "HasCollectible"],
+            "被动": ["HasCollectible", "MC_POST_EVALUATE_CACHE"],
         }
         api_calls = set()
         api_calls.add("RegisterMod")
@@ -405,74 +489,78 @@ Instructions:
             if keyword in user_lower:
                 api_calls.update(funcs)
 
-        # Map keywords to likely scaffolds
-        scaffold_keywords = {
-            "item": ["CUSTOM_ITEM"],
-            "entity": ["CUSTOM_ENTITY"],
-            "enemy": ["CUSTOM_ENTITY"],
-            "player": ["PLAYER_MODIFIER"],
-            "room": ["ROOM_MODIFIER"],
-            "event": ["EVENT_HANDLER"],
-            "health": ["PLAYER_MODIFIER"],
-            "damage": ["EVENT_HANDLER", "PLAYER_MODIFIER"],
+        # Map keywords to component types (new architecture-first system)
+        component_keywords = {
+            "passive_item": ["被动", "passive", "被动道具", "属性", "stat", "cache", "item"],
+            "active_item": ["主动", "active", "主动道具", "使用", "use item", "charge", "充能"],
+            "familiar": ["跟班", "familiar", "宠物", "companion", "follow"],
+            "room_modifier": ["房间", "room", "层", "floor", "stage"],
+            "player_modifier": ["player", "玩家", "角色", "character", "初始"],
+            "custom_entity": ["entity", "enemy", "敌人", "实体", "boss"],
         }
-        scaffolds = set()
-        for keyword, scaf in scaffold_keywords.items():
-            if keyword in user_lower:
-                scaffolds.update(scaf)
-        if not scaffolds:
-            scaffolds.add("MC_POST_GAME_STARTED")
+        components = set()
+        for comp_type, keywords in component_keywords.items():
+            if any(kw in user_lower for kw in keywords):
+                components.add(comp_type)
+
+        if not components:
+            components.add("passive_item")
 
         return TaskDefinition(
             original_request=user_input,
             title=user_input[:60],
             description=user_input,
             api_calls=list(api_calls),
-            lua_scaffolds=list(scaffolds),
+            lua_scaffolds=list(components),
         )
     
     def _build_graph(self) -> StateGraph:
-        """Construct the LangGraph workflow"""
+        """Construct the LangGraph workflow — architecture-first pipeline."""
         workflow = StateGraph(AgentState)
-        
+
         # Add nodes for each workflow stage
         workflow.add_node("parse", self._parse_node)
-        workflow.add_node("retrieve", self._retrieve_node)
-        workflow.add_node("generate", self._generate_node)
+        workflow.add_node("plan", self._plan_node)
+        workflow.add_node("retrieve", self._retrieve_file_node)
+        workflow.add_node("generate", self._generate_file_node)
         workflow.add_node("validate", self._validate_node)
-        workflow.add_node("complete", self._complete_node)
+        workflow.add_node("xml_generate", self._xml_generate_node)
+        workflow.add_node("assemble", self._assemble_node)
         workflow.add_node("error_handler", self._error_handler_node)
-        
-        # Define edges
-        workflow.add_edge("parse", "retrieve")
+
+        # Define edges: parse -> plan -> retrieve -> generate -> validate
+        workflow.add_edge("parse", "plan")
+        workflow.add_edge("plan", "retrieve")
         workflow.add_edge("retrieve", "generate")
         workflow.add_edge("generate", "validate")
-        
-        # Conditional edge from validate
+
+        # Conditional edge from validate: 4-way route
         workflow.add_conditional_edges(
             "validate",
             self._validation_router,
             {
-                "complete": "complete",
+                "next_file": "retrieve",
+                "xml_generate": "xml_generate",
                 "regenerate": "generate",
                 "error": "error_handler",
             }
         )
-        
-        workflow.add_edge("complete", END)
+
+        workflow.add_edge("xml_generate", "assemble")
+        workflow.add_edge("assemble", END)
         workflow.add_edge("error_handler", END)
-        
+
         # Set entry point
         workflow.set_entry_point("parse")
-        
-        return workflow
-    
-    async def _parse_node(self, state: AgentState) -> AgentState:
-        """
-        Stage 1: Parse natural language input into structured task.
 
-        Uses LLM when available; falls back to keyword-based parsing.
-        """
+        return workflow
+
+    # ------------------------------------------------------------------
+    # NODE: Parse
+    # ------------------------------------------------------------------
+
+    async def _parse_node(self, state: AgentState) -> AgentState:
+        """Stage 1: Parse natural language input into structured task."""
         logger.info(f"📝 Parsing input: {state.user_input[:100]}...")
         state.stage = WorkflowStage.PARSE
 
@@ -484,7 +572,7 @@ Instructions:
                     libraries=state.libraries,
                 )
                 logger.info(f"🤖 LLM parsed: title='{task.title}', "
-                            f"api_calls={task.api_calls}, scaffolds={task.lua_scaffolds}")
+                            f"api_calls={task.api_calls}, components={task.lua_scaffolds}")
             except Exception as e:
                 logger.warning(f"LLM parse failed ({e}), using fallback parser")
                 task = self._fallback_parse(state.user_input)
@@ -498,148 +586,229 @@ Instructions:
 
         logger.info(f"✅ Task parsed: {task.title}")
         return state
-    
-    async def _retrieve_node(self, state: AgentState) -> AgentState:
-        """
-        Stage 2: Retrieve relevant API references from Isaac API
-        
-        Uses RAG to find matching functions and callbacks.
-        """
-        logger.info("🔍 Retrieving API references...")
-        state.stage = WorkflowStage.RETRIEVE
-        
-        if not state.task:
-            state.add_error("No task available for retrieval")
-            return state
-        
-        # Search for each API call mentioned in the task
-        for api_call in state.task.api_calls:
-            results = self.api_search_tool.search(
-                api_call,
-                dlc_version=state.dlc_version,
-                libraries=state.libraries if state.libraries else None,
-            )
-            state.api_references.extend(results)
 
-            # Build formatted context for the Agent if available
-            if hasattr(self.api_search_tool, 'get_context_for_agent'):
-                ctx = self.api_search_tool.get_context_for_agent(
+    # ------------------------------------------------------------------
+    # NODE: Plan (NEW — architecture-first)
+    # ------------------------------------------------------------------
+
+    async def _plan_node(self, state: AgentState) -> AgentState:
+        """Stage 2: Design the complete multi-file project architecture.
+
+        Uses ModPlanner to classify the mod type and design the file tree
+        BEFORE any code is generated.
+        """
+        logger.info("🏗️  Planning mod architecture...")
+        state.stage = WorkflowStage.PLAN
+
+        if not state.task:
+            state.add_error("No task available for planning")
+            return state
+
+        plans, shared_context = await self.planner.design_architecture(
+            task=state.task,
+            dlc_version=state.dlc_version,
+            libraries=state.libraries,
+        )
+
+        state.file_plans = plans
+        state.shared_context = shared_context
+        state.current_file_index = 0
+        state.file_iterations = 0
+
+        # Log the planned file tree
+        tree_lines = ["\n📁 Planned mod structure:"]
+        for fp in plans:
+            icon = "📄" if fp.is_xml else "📜"
+            tree_lines.append(f"  {icon} {fp.relative_path} — {fp.role_description}")
+        logger.info("\n".join(tree_lines))
+
+        state.add_message(
+            "agent",
+            f"🏗️ Designed architecture: {len(plans)} files across {len([p for p in plans if not p.is_xml])} Lua + {len([p for p in plans if p.is_xml])} XML",
+        )
+        state.iterations += 1
+
+        return state
+
+    # ------------------------------------------------------------------
+    # NODE: Retrieve File (per-file API retrieval)
+    # ------------------------------------------------------------------
+
+    async def _retrieve_file_node(self, state: AgentState) -> AgentState:
+        """Retrieve APIs for the CURRENT file only (focused context)."""
+        if state.current_file_index >= len(state.file_plans):
+            state.all_files_generated = True
+            return state
+
+        current_plan = state.file_plans[state.current_file_index]
+        logger.info(f"🔍 [{state.current_file_index + 1}/{len(state.file_plans)}] Retrieving APIs for: {current_plan.relative_path}")
+
+        state.stage = WorkflowStage.RETRIEVE_FILE
+
+        # Clear previous file's API context
+        state.api_context = []
+
+        # Skip XML files — they go through the dedicated XML generator
+        if current_plan.is_xml:
+            logger.info(f"  Skipping API retrieval for XML file: {current_plan.relative_path}")
+            return state
+
+        # Search for APIs this specific file needs
+        all_apis = list(current_plan.required_apis)
+        if state.task:
+            all_apis.extend(state.task.api_calls)
+
+        searched = set()
+        for api_call in all_apis:
+            if api_call in searched:
+                continue
+            searched.add(api_call)
+
+            try:
+                results = self.api_search_tool.search(
                     api_call,
                     dlc_version=state.dlc_version,
                     libraries=state.libraries if state.libraries else None,
                 )
-                state.api_context.append(ctx)
-        
-        # Also get templates for scaffolds
-        for scaffold in state.task.lua_scaffolds:
-            matches = self.template_manager.find_templates(scaffold)
-            state.template_matches.extend(matches)
-        
-        state.add_message(
-            "agent", 
-            f"📚 Retrieved {len(state.api_references)} API references"
-        )
-        state.iterations += 1
-        
-        logger.info(f"✅ Retrieved {len(state.api_references)} references")
+                state.api_references.extend(results)
+
+                if hasattr(self.api_search_tool, 'get_context_for_agent'):
+                    ctx = self.api_search_tool.get_context_for_agent(
+                        api_call,
+                        dlc_version=state.dlc_version,
+                        libraries=state.libraries if state.libraries else None,
+                    )
+                    if ctx:
+                        state.api_context.append(ctx)
+            except Exception as e:
+                logger.warning(f"  API search failed for '{api_call}': {e}")
+
+        logger.info(f"  Retrieved {len(state.api_context)} API contexts for {current_plan.relative_path}")
         return state
-    
-    async def _generate_node(self, state: AgentState) -> AgentState:
-        """
-        Stage 3: Generate Lua code using templates, API info, and LLM.
 
-        Uses LLM + RAG context to flesh out templates into real code.
-        On regeneration, feeds back validation errors to the LLM.
-        Falls back to bare template when LLM is unavailable.
-        """
-        logger.info("⚙️  Generating Lua code...")
-        state.stage = WorkflowStage.GENERATE
+    # ------------------------------------------------------------------
+    # NODE: Generate File (per-file code generation)
+    # ------------------------------------------------------------------
 
-        if not state.task:
-            state.add_error("Incomplete state for code generation")
+    async def _generate_file_node(self, state: AgentState) -> AgentState:
+        """Generate code for the CURRENT file only.
+
+        Each file gets:
+        - Its specific FilePlan (role, path)
+        - Its architectural pattern (conventions, reference code)
+        - Only the APIs it needs (focused, not a full dump)
+        - Shared Mod_Data context for cross-file consistency
+        - Validation feedback from previous attempts on THIS file
+        """
+        if state.current_file_index >= len(state.file_plans):
+            state.all_files_generated = True
             return state
 
-        # Deduplicate and consolidate API context from all searches
+        current_plan = state.file_plans[state.current_file_index]
+        logger.info(f"⚙️  [{state.current_file_index + 1}/{len(state.file_plans)}] Generating: {current_plan.relative_path}")
+
+        state.stage = WorkflowStage.GENERATE_FILE
+        state.file_iterations += 1
+
+        if not state.task:
+            state.add_error("No task for code generation")
+            return state
+
+        # On regeneration: pop the failed artifact so it gets replaced
+        if state.file_iterations > 1 and state.generated_code:
+            popped = state.generated_code.pop()
+            logger.info(f"  🔄 Replacing failed artifact: {popped.file_path or popped.scaffold_type}")
+
+        # Get the architectural pattern for this file
+        pattern = self.architecture_guide.get_pattern(current_plan.template_hint)
+
+        # Consolidate API context for this file
         consolidated_context = self._consolidate_api_context(state.api_context)
 
-        # Build feedback from previous validation failures (regeneration loop)
+        # Build feedback from validation failures on this file (regeneration)
         feedback = ""
-        if state.iterations > 1 and state.validation_results:
-            failed = [r for r in state.validation_results if not r.is_valid]
-            if failed:
-                errors_list = []
-                for r in failed:
-                    errors_list.extend(r.errors)
+        if state.file_iterations > 1 and state.validation_results:
+            last_result = state.validation_results[-1] if state.validation_results else None
+            if last_result and not last_result.is_valid:
+                errors_list = last_result.errors
                 if errors_list:
                     feedback = (
-                        "\n\nPREVIOUS VALIDATION ERRORS (fix these):\n" +
+                        "\n\nPREVIOUS VALIDATION ERRORS (fix these in this file):\n" +
                         "\n".join(f"- {e}" for e in errors_list)
                     )
 
-        for scaffold_name in state.task.lua_scaffolds:
-            template = self.template_manager.get_template(scaffold_name)
+        # Generate the code (XML files handled separately)
+        if current_plan.is_xml:
+            lua_code = ""  # XML files handled in _xml_generate_node
+        elif self.llm:
+            try:
+                lua_code = await self._llm_generate_file(
+                    file_plan=current_plan,
+                    pattern=pattern,
+                    task_title=state.task.title,
+                    task_description=state.task.description,
+                    api_context=consolidated_context,
+                    shared_context=state.shared_context,
+                    feedback=feedback,
+                    dlc_version=state.dlc_version,
+                    libraries=state.libraries,
+                )
+                logger.info(f"  LLM generated {len(lua_code)} chars")
+            except Exception as e:
+                logger.warning(f"  LLM generation failed for {current_plan.relative_path}: {e}")
+                lua_code = self._get_fallback_code(current_plan, pattern)
+        else:
+            lua_code = self._get_fallback_code(current_plan, pattern)
 
-            if self.llm:
-                try:
-                    lua_code = await self._llm_generate(
-                        scaffold_type=scaffold_name,
-                        template=template,
-                        task_title=state.task.title,
-                        task_description=state.task.description,
-                        api_context=consolidated_context,
-                        feedback=feedback,
-                        dlc_version=state.dlc_version,
-                        libraries=state.libraries,
-                    )
-                    logger.info(f"🤖 LLM generated code for {scaffold_name} "
-                                f"({len(lua_code)} chars)")
-                except Exception as e:
-                    logger.warning(f"LLM generation failed for {scaffold_name}: {e}, "
-                                   f"using template fallback")
-                    lua_code = template
-            else:
-                lua_code = template
-
-            code = GeneratedCode(
-                scaffold_type=scaffold_name,
-                lua_code=lua_code,
-                requires_validation=True,
-            )
-            state.generated_code.append(code)
+        code = GeneratedCode(
+            scaffold_type=current_plan.template_hint,
+            lua_code=lua_code,
+            file_path=current_plan.relative_path,
+            role_description=current_plan.role_description,
+            requires_validation=not current_plan.is_xml,
+        )
+        state.generated_code.append(code)
 
         state.add_message(
             "agent",
-            f"✨ Generated {len(state.generated_code)} code artifacts"
+            f"✨ Generated {current_plan.relative_path} ({len(lua_code)} chars)"
         )
-        state.iterations += 1
 
-        logger.info(f"✅ Generated {len(state.generated_code)} Lua artifacts")
+        logger.info(f"  Generated: {current_plan.relative_path}")
         return state
 
+    def _get_fallback_code(self, file_plan: FilePlan, pattern: Optional[FilePattern]) -> str:
+        """Get fallback code when LLM is unavailable."""
+        if pattern and pattern.reference_code:
+            return pattern.reference_code
+        return f"-- {file_plan.relative_path}\n-- Role: {file_plan.role_description}\n-- TODO: Implement\n"
+
     # ------------------------------------------------------------------
-    # LLM-based code generation
+    # Per-file LLM code generation
     # ------------------------------------------------------------------
 
-    async def _llm_generate(
+    async def _llm_generate_file(
         self,
-        scaffold_type: str,
-        template: str,
+        file_plan: FilePlan,
+        pattern: Optional[FilePattern],
         task_title: str,
         task_description: str,
         api_context: str,
+        shared_context: str = "",
         feedback: str = "",
         dlc_version: str = "REP+",
         libraries: list = None,
     ) -> str:
-        """Use LLM to generate Lua code from template + RAG context."""
+        """Use LLM to generate code for a single file with focused context."""
         if libraries is None:
             libraries = []
         system_prompt = self._build_generation_prompt(
-            scaffold_type=scaffold_type,
-            template=template,
+            file_plan=file_plan,
+            pattern=pattern,
             task_title=task_title,
             task_description=task_description,
             api_context=api_context,
+            shared_context=shared_context,
             dlc_version=dlc_version,
             libraries=libraries,
         )
@@ -648,10 +817,14 @@ Instructions:
 
         messages = [
             SystemMessage(content=system_prompt),
-            HumanMessage(content=f"Generate the complete Lua mod code for: {task_title}"),
+            HumanMessage(content=f"Generate code for: {file_plan.relative_path} — {file_plan.role_description}"),
         ]
         response = await self.llm.ainvoke(messages)
         raw = response.content if hasattr(response, 'content') else str(response)
+
+        # For XML files, return the raw content (will be processed by XML generator)
+        if file_plan.is_xml or file_plan.relative_path.endswith(".xml"):
+            return _extract_lua_code(raw)  # same extraction logic works for XML in markdown
 
         return _extract_lua_code(raw)
 
@@ -665,91 +838,213 @@ Instructions:
                 seen.add(ctx)
                 unique.append(ctx)
         return "\n\n".join(unique)
-    
-    async def _validate_node(self, state: AgentState) -> AgentState:
+
+    async def _xml_generate_node(self, state: AgentState) -> AgentState:
         """
-        Stage 4: Validate generated Lua code.
+        Stage 3.5: Generate XML data files based on generated Lua code.
 
-        Multi-layered validation:
-        1. luacheck (external binary) if available
-        2. Python-based Lua syntax check (always runs)
+        Uses LLM with XML schema context when available;
+        falls back to programmatic generation.
         """
-        logger.info("✔️  Validating Lua code...")
-        state.stage = WorkflowStage.VALIDATE
+        logger.info("📄 Generating XML files...")
+        state.stage = WorkflowStage.XML_GENERATE
 
-        for artifact in state.generated_code:
-            code = artifact.lua_code
+        if not state.task:
+            state.add_error("No task for XML generation")
+            return state
 
-            # Layer 1: Try luacheck if available
-            luacheck_result = _run_luacheck(code)
+        state.generated_xml = []
 
-            # Layer 2: Always run Python-based syntax check
-            syntax_errors = _validate_lua_syntax(code)
+        # Shared ID context so entries across files get unique IDs
+        from isaac_agent.xml.xml_generator import XmlGenerationContext
+        safe_title = "".join(c if c.isalnum() else "_" for c in state.task.title).strip("_").lower()
+        shared_ctx = XmlGenerationContext(mod_name=safe_title, task_title=state.task.title)
+        self.xml_generator._shared_context = shared_ctx
 
-            if luacheck_result:
-                # Merge luacheck findings with basic syntax errors
-                all_errors = list(set(luacheck_result.errors + syntax_errors))
-                is_valid = luacheck_result.is_valid and not syntax_errors
-                result = ValidationResult(
-                    is_valid=is_valid,
-                    errors=all_errors,
-                    warnings=luacheck_result.warnings,
-                    luacheck_output=luacheck_result.luacheck_output,
+        for i, code in enumerate(state.generated_code):
+            scaffold = code.scaffold_type
+            xml_files = resolve_xml_files(
+                scaffolds=[scaffold],
+                task_description=state.task.description,
+                lua_code=code.lua_code,
+            )
+
+            for xml_spec in xml_files:
+                result = self.xml_generator.generate(
+                    xml_file=xml_spec["xml_file"],
+                    task_title=state.task.title,
+                    task_description=state.task.description,
+                    lua_code=code.lua_code,
+                    scaffold_type=scaffold,
+                    dlc_version=state.dlc_version,
                 )
-            else:
-                # No luacheck — rely on syntax check only
-                is_valid = len(syntax_errors) == 0
-                result = ValidationResult(
-                    is_valid=is_valid,
-                    errors=syntax_errors,
-                    warnings=[],
-                    luacheck_output="" if is_valid else "\n".join(syntax_errors),
-                )
+                if result and result.entries:
+                    state.generated_xml.append(result)
+                    logger.info(f"  Generated {xml_spec['xml_file']}: "
+                                f"{len(result.entries)} entry(s) [{result.generated_by}]")
 
-            state.validation_results.append(result)
+        # Merge entries that target the same XML file
+        state.generated_xml = self._merge_xml_entries(state.generated_xml)
 
-            if not result.is_valid:
-                logger.warning(f"⚠️  {artifact.scaffold_type}: {len(result.errors)} error(s)")
+        xml_summary = ", ".join(
+            f"{g.xml_file}({len(g.entries)})"
+            for g in state.generated_xml
+        ) if state.generated_xml else "none"
 
         state.add_message(
             "agent",
-            f"✅ Validated {len(state.validation_results)} artifacts"
+            f"📄 Generated XML files: {xml_summary}",
         )
-        state.iterations += 1
 
-        valid_count = sum(1 for r in state.validation_results if r.is_valid)
-        logger.info(f"✅ Validation: {valid_count}/{len(state.validation_results)} valid")
+        logger.info(f"✅ Generated {len(state.generated_xml)} XML files")
+        return state
+
+    @staticmethod
+    def _merge_xml_entries(generated: List[Any]) -> List[Any]:
+        """Merge GeneratedXml objects that target the same XML file."""
+        from isaac_agent.xml.xml_generator import XmlGenerator
+        return XmlGenerator.merge_xml_files(generated)
+
+    async def _validate_node(self, state: AgentState) -> AgentState:
+        """Validate the CURRENT file's generated code.
+
+        On next_file / regenerate routes, validates only the latest artifact.
+        """
+        logger.info("✔️  Validating current file...")
+        state.stage = WorkflowStage.VALIDATE
+
+        # Only validate the latest (current file's) artifact
+        if not state.generated_code:
+            state.validation_results.append(ValidationResult(is_valid=True))
+            return state
+
+        artifact = state.generated_code[-1]
+
+        # For XML files and empty/fallback code, skip actual validation
+        # but still advance the file index (this is critical for the per-file loop)
+        current_plan = None
+        if state.current_file_index < len(state.file_plans):
+            current_plan = state.file_plans[state.current_file_index]
+
+        if current_plan and current_plan.is_xml:
+            state.validation_results.append(ValidationResult(is_valid=True))
+            logger.info(f"  Skipped validation for XML: {current_plan.relative_path}")
+            state.current_file_index += 1
+            state.file_iterations = 0
+            return state
+
+        code = artifact.lua_code
+
+        # Skip validation for empty/fallback code
+        if not code or code.startswith("-- TODO:"):
+            state.validation_results.append(ValidationResult(
+                is_valid=True,
+                warnings=["Fallback/empty code — no validation performed"],
+            ))
+            state.current_file_index += 1
+            state.file_iterations = 0
+            return state
+
+        # Layer 1: Try luacheck if available
+        luacheck_result = _run_luacheck(code)
+
+        # Layer 2: Always run Python-based syntax check
+        # Skip RegisterMod check for non-main files
+        syntax_errors = _validate_lua_syntax(code)
+        if artifact.file_path and artifact.file_path != "main.lua":
+            syntax_errors = [e for e in syntax_errors if "RegisterMod" not in e]
+
+        if luacheck_result:
+            all_errors = list(set(luacheck_result.errors + syntax_errors))
+            is_valid = luacheck_result.is_valid and not syntax_errors
+            result = ValidationResult(
+                is_valid=is_valid,
+                errors=all_errors,
+                warnings=luacheck_result.warnings,
+                luacheck_output=luacheck_result.luacheck_output,
+            )
+        else:
+            is_valid = len(syntax_errors) == 0
+            result = ValidationResult(
+                is_valid=is_valid,
+                errors=syntax_errors,
+                warnings=[],
+                luacheck_output="" if is_valid else "\n".join(syntax_errors),
+            )
+
+        state.validation_results.append(result)
+
+        if not result.is_valid:
+            logger.warning(f"  ⚠️  {artifact.file_path or artifact.scaffold_type}: {len(result.errors)} error(s)")
+            # If max per-file retries exceeded, skip this file and advance
+            if state.file_iterations >= self.max_iterations:
+                logger.warning(f"  ⏭️  Skipping file after {state.file_iterations} failed attempts")
+                state.current_file_index += 1
+                state.file_iterations = 0
+        else:
+            logger.info(f"  ✅ {artifact.file_path or artifact.scaffold_type}: valid")
+            # Advance to next file for the next iteration
+            state.current_file_index += 1
+            state.file_iterations = 0
+
+        state.add_message("agent", f"✔️ Validated {artifact.file_path or artifact.scaffold_type}")
         return state
 
     def _validation_router(self, state: AgentState) -> str:
-        """Route based on validation results and iteration count."""
+        """Route based on validation of the CURRENT file.
+
+        IMPORTANT: This is a LangGraph conditional edge function — it must NOT
+        modify state. State modifications happen in the nodes.
+
+        4-way routing:
+        - next_file: current file valid, more files remain
+        - xml_generate: all files done, proceed to XML generation
+        - regenerate: current file failed, retry (if under max iterations)
+        - error: unrecoverable error
+        """
         if state.stage == WorkflowStage.ERROR:
             return "error"
 
-        if all(r.is_valid for r in state.validation_results):
-            return "complete"
+        if not state.validation_results:
+            return "error"
 
-        if state.iterations < self.max_iterations:
-            logger.info(f"🔄 Regenerating (iteration {state.iterations}/{self.max_iterations})")
+        last_result = state.validation_results[-1]
+
+        if last_result.is_valid:
+            # Check if there are more files to process
+            if state.current_file_index >= len(state.file_plans):
+                logger.info("All files generated and validated, proceeding to XML generation")
+                state.all_files_generated = True
+                return "xml_generate"
+            logger.info(f"➡️  Proceeding to file {state.current_file_index + 1}/{len(state.file_plans)}")
+            return "next_file"
+
+        # Current file failed validation — can we retry?
+        if state.file_iterations < self.max_iterations:
+            logger.info(f"🔄 Regenerating current file (attempt {state.file_iterations}/{self.max_iterations})")
             return "regenerate"
 
-        # Max iterations reached — proceed anyway
-        logger.warning(f"⚠️  Max iterations ({self.max_iterations}) reached, proceeding with errors")
-        return "complete"
-    
-    async def _complete_node(self, state: AgentState) -> AgentState:
-        """
-        Final stage: Mark workflow as complete
-        
-        Prepares final output artifacts.
-        """
-        logger.info("🎉 Workflow complete!")
+        # Max per-file retries reached — skip this file and advance
+        logger.warning(f"⚠️  Max retries ({self.max_iterations}) for current file, skipping")
+        # Force advance in node since router can't modify state
+        return "next_file"
+
+    # ------------------------------------------------------------------
+    # NODE: Assemble (final stage)
+    # ------------------------------------------------------------------
+
+    async def _assemble_node(self, state: AgentState) -> AgentState:
+        """Final stage: Mark workflow as complete with multi-file artifacts."""
+        logger.info("🎉 Workflow complete — multi-file mod assembled!")
         state.stage = WorkflowStage.COMPLETE
-        state.add_message("agent", "✅ Workflow completed successfully")
+        state.add_message(
+            "agent",
+            f"✅ Generated {len(state.generated_code)} files across {len(state.file_plans)} planned paths",
+        )
         return state
-    
+
     async def _error_handler_node(self, state: AgentState) -> AgentState:
-        """Handle workflow errors"""
+        """Handle workflow errors."""
         logger.error(f"❌ Workflow error: {state.errors}")
         state.add_message("system", f"Error: {', '.join(state.errors)}")
         return state
