@@ -3,6 +3,17 @@ set -e
 
 echo "🚀 Setting up Isaac AI Agent development environment..."
 
+# =========================================================================
+# Git proxy (Clash/V2Ray on host machine)
+# =========================================================================
+echo "🌐 Configuring git proxy..."
+git config --global http.proxy http://host.docker.internal:7897
+git config --global https.proxy http://host.docker.internal:7897
+git config --global user.name "3113y"
+git config --global user.email "448592981@qq.com"
+echo "   http.proxy  = $(git config --global http.proxy)"
+echo "   https.proxy = $(git config --global https.proxy)"
+
 # Update apt
 apt-get update && apt-get install -y \
     curl \

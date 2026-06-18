@@ -21,7 +21,8 @@
         "sumneko.lua",
         "trixnz.vscode-lua",
         "eamodio.gitlens",
-        "ms-vscode.makefile-tools"
+        "ms-vscode.makefile-tools",
+        "anthropic.claude-code"
       ],
       "settings": {
         "python.defaultInterpreterPath": "/workspace/.venv/bin/python",
